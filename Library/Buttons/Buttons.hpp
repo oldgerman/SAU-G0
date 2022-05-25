@@ -17,13 +17,13 @@
 			break;
 		case BUTTON_BOTH:
 			break;
+		case BUTTON_A_LONG:
+			break;
 		case BUTTON_B_LONG:
 			break;
-		case BUTTON_F_LONG:
-			break;
-		case BUTTON_F_SHORT:
-			break;
 		case BUTTON_B_SHORT:
+			break;
+		case BUTTON_A_SHORT:
 			break;
 		case BUTTON_OK_SHORT:
 			break;
@@ -117,18 +117,18 @@ void waitForButtonPress();
 
 extern "C" {
 #endif
-
+//B改A，F改B
 //7种状态测试OK
 typedef enum{
   BUTTON_NONE      = 0,  /* No buttons pressed / < filter time*/
   //3的倍数，非5的倍数
-  BUTTON_F_SHORT   = 3,  /* User has pressed the front button*/
-  BUTTON_B_SHORT   = 6,  /* User has pressed the back  button*/
+  BUTTON_B_SHORT   = 3,  /* User has pressed the front button*/
+  BUTTON_A_SHORT   = 6,  /* User has pressed the back  button*/
   BUTTON_BOTH      = 9, /* User has pressed both buttons*/
   BUTTON_OK_SHORT  = 12, /* OK键短按 */
   //5的倍数，非3的倍数
-  BUTTON_F_LONG    = 5,  /* User is  holding the front button*/
-  BUTTON_B_LONG    = 10,  /* User is  holding the back button*/
+  BUTTON_B_LONG    = 5,  /* User is  holding the front button*/
+  BUTTON_A_LONG    = 10,  /* User is  holding the back button*/
   BUTTON_BOTH_LONG = 20, /* User is holding both buttons*/
   BUTTON_OK_LONG   = 25,/* OK键长按 */
   //取素数

@@ -1,4 +1,11 @@
-20220525：20：12
+2022/05/25  20:43
+
+同时运行
+
+doAPPWork()
+doRTCWork()
+doCOMWork()
+doMIXWork()
 
 单按键开机、长按关机正常
 

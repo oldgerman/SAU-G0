@@ -35,10 +35,10 @@ bool waitingToChooseOneFromTwo()
 		ButtonState buttons = getButtonState();
 		switch(buttons)
 		{
-			case BUTTON_B_SHORT:
+			case BUTTON_A_SHORT:
 				ok = 1;
 				break;
-			case BUTTON_F_SHORT:
+			case BUTTON_B_SHORT:
 				ok = 0;
 				break;
 			default:
@@ -100,7 +100,7 @@ ButtonState readButtonState() {
    */
   static uint8_t  previousABState       = 0;
   static uint32_t previousABStateChange = 0;
-  const uint16_t  timeout             = 400;
+  const uint16_t  timeout             = 400;	//若按下超过400秒即为长按
   uint8_t         currentABState;
 
 
@@ -155,9 +155,9 @@ ButtonState readButtonState() {
       // User has been holding the button down
       // We want to send a button is held message
       if (currentABState == 0x01)// && buttons != BUTTON_IDLE)
-        return BUTTON_F_LONG;
-      else if (currentABState == 0x02)// && buttons != BUTTON_IDLE)
         return BUTTON_B_LONG;
+      else if (currentABState == 0x02)// && buttons != BUTTON_IDLE)
+        return BUTTON_A_LONG;
       else
         return BUTTON_BOTH_LONG; // Both being held case
     } else
@@ -186,9 +186,9 @@ ButtonState readButtonState() {
         // So we send button press
 
         if (previousABState == 0x01)
-          retVal = BUTTON_F_SHORT;
-        else if (previousABState == 0x02)
           retVal = BUTTON_B_SHORT;
+        else if (previousABState == 0x02)
+          retVal = BUTTON_A_SHORT;
         else
           retVal = BUTTON_BOTH; // Both being held case
       }

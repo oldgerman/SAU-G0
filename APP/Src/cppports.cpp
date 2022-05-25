@@ -21,8 +21,8 @@
 #include "RTClib.h"
 #include "Buttons.hpp"
 
-#define swPressedTimePowerOn 100
-#define swPressedTimeshutDown 1000
+#define swPressedTimePowerOn 100		//至少短按开机时间
+#define swPressedTimeshutDown 1000		//至少长按关机时间
 /******************* 温湿度计 *******************/
 uint8_t th_RH_X1 = 0;		//范围0~100，无小数点
 int16_t th_C_X10 = 0;		//温度有正负，-9.9~85.0
@@ -433,19 +433,19 @@ void loopGUI() {
 //		u8g2.clearBuffer();
 //绘制温湿度信息
 
-	buttons = getButtonState();
+		buttons = getButtonState();
 	switch (buttons) {
 	case BUTTON_NONE:
 		break;
 	case BUTTON_BOTH:
 		break;
+	case BUTTON_A_LONG:
+		break;
 	case BUTTON_B_LONG:
 		break;
-	case BUTTON_F_LONG:
-		break;
-	case BUTTON_F_SHORT:
-		break;
 	case BUTTON_B_SHORT:
+		break;
+	case BUTTON_A_SHORT:
 		break;
 	case BUTTON_OK_SHORT:
 		break;
