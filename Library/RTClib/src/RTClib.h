@@ -44,7 +44,18 @@ extern "C" {
 
 /* 导出类型 Exported types ---------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+/*
+ * 用uint8_t整形存储时间
+ * 例如成员分别为 {22 05 22 18 19 00}	表示 2022年5月22日18点19分00秒
+ */
+struct uintDateTime{
+	uint8_t year;	//	后面的处理需要自己加2000
+	uint8_t month;
+	uint8_t date;
+	uint8_t hour;
+	uint8_t minute;
+	uint8_t second;
+};
 /* USER CODE END ET */
 
 /* 导出常量 Exported constants -----------------------------------------------*/

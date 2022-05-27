@@ -6,7 +6,7 @@
  */
 
 #include "cppports.h"
-#include "cmsis_os.h"
+#include "MillisTaskManager.h"
 /******************* C标准库 *******************/
 #include "stdio.h"   //提供vsnprintf()
 #include "stdlib.h"  //提供abs()
@@ -22,7 +22,7 @@
 #include "Buttons.hpp"
 
 #define swPressedTimePowerOn 100		//至少短按开机时间
-#define swPressedTimeshutDown 1000		//至少长按关机时间
+#define swPressedTimeshutDown 2000		//至少长按关机时间
 /******************* 温湿度计 *******************/
 uint8_t th_RH_X1 = 0;		//范围0~100，无小数点
 int16_t th_C_X10 = 0;		//温度有正负，-9.9~85.0
@@ -33,7 +33,7 @@ bool th_MeasurementUpload = false;
 #define MOVFilter 8
 bool DetectedAccelerometer = false;		//检测到加速度计的标记
 uint8_t accelInit = 0;		// 首次标记
-TickType_t lastMovementTime = 0;		//首次进入shouldShuntDown()函数置为1才会累计时间
+uint32_t lastMovementTime = 0;		//首次进入shouldShuntDown()函数置为1才会累计时间
 int32_t axisError = 0;
 AxisData axData;
 AxisAvg axAvg;
@@ -54,18 +54,7 @@ char testSaveBuffer[17] = {
 };
 #endif
 uint8_t COMDateTimeAdjust_countIsDigit;
-/*
- * now_RXbufferToNum结构体类型，用整形临时存储时间
- * 例如成员分别为 {22 05 22 18 19 00}	表示 2022年5月22日18点19分00秒
- */
-struct now_RXbufferToNum{
-	uint8_t year;	//	后面的处理需要自己加2000
-	uint8_t month;
-	uint8_t date;
-	uint8_t hour;
-	uint8_t minute;
-	uint8_t second;
-} nowRXbufferToNum;
+uintDateTime  nowRXbufferToNum;
 /******************* USART *******************/
 uint8_t aRxTemp[2];
 uint8_t aRxBuffer[RX_BUFFER_SIZE];
@@ -89,6 +78,8 @@ int mi(unsigned char dat, unsigned char mi) {
 }
 /******************* 按键状态全局变量 *******************/
 extern ButtonState buttons;
+/******************* 获取Page *******************/
+#include "Page.hpp"
 /****************************************************
 *函数:strtoint(char *str,int result)
 *输入:unsigned 字符串
@@ -96,98 +87,112 @@ extern ButtonState buttons;
 比如：收到“12345”  赋值给变量就是12345
 https://blog.csdn.net/u013457167/article/details/45459887
 *****************************************************/
-int strtoint(unsigned char* str, int result)
- {
-	int i, tmp = 0;         //i,tmp临时变量
-	int length = strlen((char*) str);         //strlen参数为const char*,故强制转换
-	i = 0;
-	if (str[0] == '-')  //	可以输入-12345，负号也给你转成有符号整数
-		i = 1;
-	for (; i < length; i++) {
-		tmp = str[i] & 0x0f;         //如果原数组中存放的是ascii码，直接将其转换为数字
-		result += tmp * mi(10, length - i - 1); //1*100+2*10+3*1
-	}
-	if (str[0] == '-')
-		return -result;
-	return result;
+//int strtoint(unsigned char* str, int result)
+// {
+//	int i, tmp = 0;         //i,tmp临时变量
+//	int length = strlen((char*) str);         //strlen参数为const char*,故强制转换
+//	i = 0;
+//	if (str[0] == '-')  //	可以输入-12345，负号也给你转成有符号整数
+//		i = 1;
+//	for (; i < length; i++) {
+//		tmp = str[i] & 0x0f;         //如果原数组中存放的是ascii码，直接将其转换为数字
+//		result += tmp * mi(10, length - i - 1); //1*100+2*10+3*1
+//	}
+//	if (str[0] == '-')
+//		return -result;
+//	return result;
+//}
+
+/******************* 任务调度器 *******************/
+static MillisTaskManager mtmMain;
+
+void setup(){
+	powerOnDectet(swPressedTimePowerOn);
+	setupGUI();
+	setupCOM();
+	setupRTC();
+	setupAHT20();
+	setupMOV();
+
+    /*任务注册*/
+    mtmMain.Register(loopGUI, 50);                	//50ms：屏幕刷新
+    mtmMain.Register(loopRTC, 300);                 //300ms：RTC监控
+    mtmMain.Register(loopMIX, 100);   			 	//100ms：杂七杂八的传感器监控
+    mtmMain.Register(loopCOM, 500);            		//500ms：COM收发监控
 }
 
-void doRTCWork() {
-#if 1	//开启或禁用RTC线程
-		nowCOMChanged = false;
-	  if (!rtc.begin(&FRToSI2C1, false))
-	    DBG_PRINT("Couldn't find RTC");
+void loop(){
+	mtmMain.Running(HAL_GetTick());
+}
 
-	  if (rtc.lostPower()) {
-	    DBG_PRINT("RTC source clock is running, let's set the time!");
-	    // When time needs to be set on a new device, or after a power loss, the
-	    // following line sets the RTC to the date & time this sketch was compiled
+void setupRTC()
+{
+	nowCOMChanged = false;
+  if (!rtc.begin(&FRToSI2C1, false))
+    DBG_PRINT("Couldn't find RTC");
+
+  if (rtc.lostPower()) {
+    DBG_PRINT("RTC source clock is running, let's set the time!");
+    // When time needs to be set on a new device, or after a power loss, the
+    // following line sets the RTC to the date & time this sketch was compiled
 //	    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-	    rtc.adjust(DateTime(SECONDS_FROM_1970_TO_2000));
-	    // This line sets the RTC with an explicit date & time, for example to set
-	    // January 21, 2014 at 3am you would call:
-	    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-	  }
-	for (;;) {
-#if 0
-		if (ulTaskNotifyTake(pdTRUE, 2000)) {
+    rtc.adjust(DateTime(SECONDS_FROM_1970_TO_2000));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+  }
+}
 
-		} else {
-			osDelay(1000);
-		}
-#else
-		if(nowCOMChanged)
-		{
-			rtc.adjust(DateTime(
-				nowRXbufferToNum.year + 2000U,//补上2000年
-				nowRXbufferToNum.month,
-				nowRXbufferToNum.date,
-				nowRXbufferToNum.hour,
-				nowRXbufferToNum.minute,
-				nowRXbufferToNum.second
-			));
-			nowCOMChanged = false;
-		}
-		DBG_PRINT("%d/%d/%d %d:%d:%d\r\n",
-				//2022/12/31 (Wednesday) 21:45:32
-				//最多31个ASCII字符 + "\r\n\0" 是34个
-				nowRXbufferToNum.year,
-				nowRXbufferToNum.month,
-				nowRXbufferToNum.date,
-				nowRXbufferToNum.hour,
-				nowRXbufferToNum.minute,
-				nowRXbufferToNum.second
-		);
 
-		now = rtc.now();
-		DBG_PRINT("%d/%d/%d (%s) %d:%d:%d\r\n",
-				//2022/12/31 (Wednesday) 21:45:32
-				//最多31个ASCII字符 + "\r\n\0" 是34个
-				now.year(),
-				now.month(),
-				now.day(),
-				daysOfTheWeek[now.dayOfTheWeek()],
-				now.hour(),
-				now.minute(),
-				now.second()
-		);
-		DBG_PRINT(" since midnight 1/1/1970 = %d s = %dd", now.unixtime(), now.unixtime() / 86400L);
-
-		// calculate a date which is 7 days, 12 hours, 30 minutes, 6 seconds into the future
-		DateTime future (now + TimeSpan(7,12,30,6));
-		DBG_PRINT(" now + 7d + 12h + 30m + 6s: %d/%d/%d %d:%d:%d",
-				future.year(),
-				future.month(),
-				future.day(),
-				future.hour(),
-				future.minute(),
-				future.second()
-		);
-		osDelay(500);
-#endif
+void loopRTC() {
+	if(nowCOMChanged)
+	{
+		rtc.adjust(DateTime(
+			nowRXbufferToNum.year + 2000U,//补上2000年
+			nowRXbufferToNum.month,
+			nowRXbufferToNum.date,
+			nowRXbufferToNum.hour,
+			nowRXbufferToNum.minute,
+			nowRXbufferToNum.second
+		));
+		nowCOMChanged = false;
 	}
-#endif
-	osDelay(500);
+	DBG_PRINT("%d/%d/%d %d:%d:%d\r\n",
+			//2022/12/31 (Wednesday) 21:45:32
+			//最多31个ASCII字符 + "\r\n\0" 是34个
+			nowRXbufferToNum.year,
+			nowRXbufferToNum.month,
+			nowRXbufferToNum.date,
+			nowRXbufferToNum.hour,
+			nowRXbufferToNum.minute,
+			nowRXbufferToNum.second
+	);
+
+	now = rtc.now();
+	DBG_PRINT("%d/%d/%d (%s) %d:%d:%d\r\n",
+			//2022/12/31 (Wednesday) 21:45:32
+			//最多31个ASCII字符 + "\r\n\0" 是34个
+			now.year(),
+			now.month(),
+			now.day(),
+			daysOfTheWeek[now.dayOfTheWeek()],
+			now.hour(),
+			now.minute(),
+			now.second()
+	);
+	DBG_PRINT(" since midnight 1/1/1970 = %d s = %dd", now.unixtime(), now.unixtime() / 86400L);
+
+	// calculate a date which is 7 days, 12 hours, 30 minutes, 6 seconds into the future
+	DateTime future (now + TimeSpan(7,12,30,6));
+	DBG_PRINT(" now + 7d + 12h + 30m + 6s: %d/%d/%d %d:%d:%d",
+			future.year(),
+			future.month(),
+			future.day(),
+			future.hour(),
+			future.minute(),
+			future.second()
+	);
+//		HAL_Delay(500);
 }
 /**
  * 比较运动或按钮超时阈值，来决定返回是否睡眠
@@ -203,8 +208,8 @@ static bool shouldBeSleeping(bool inAutoStart) {
 			}
 		}
 		if (lastMovementTime > 0 /*|| lastButtonTime > 0*/) {
-			if ((xTaskGetTickCount() - lastMovementTime) > 500 //1000ms 临时设置的休眠超时时间
-				/*&& (xTaskGetTickCount() - lastButtonTime) > getSleepTimeout()*/) {
+			if ((HAL_GetTick() - lastMovementTime) > 500 //1000ms 临时设置的休眠超时时间
+				/*&& (HAL_GetTick() - lastButtonTime) > getSleepTimeout()*/) {
 				return true;
 			}
 		}
@@ -212,46 +217,13 @@ static bool shouldBeSleeping(bool inAutoStart) {
 	return false;
 }
 
-void printTaskUsage(const char *str, uint16_t stackSize,
-		osThreadId TaskHandle) {
-	uint16_t stackFreeSize = uxTaskGetStackHighWaterMark(TaskHandle);
-	uint16_t used = stackSize - stackFreeSize;
-	if(used);
-	DBG_PRINT("%s: %3d/%-3d  %d%%\r\n", str, used, stackSize, used * 100 / stackSize);
-}
-void showTaskUsage(uint16_t ms) {
-	static uint64_t tick_cnt_old = 0;
-	uint64_t tick_cnt = xTaskGetTickCount();
-	if (tick_cnt - tick_cnt_old > ms) {
-		tick_cnt_old = tick_cnt;
-		printTaskUsage("APPTask", APPTask_stacksize, APPTaskHandle);
-		printTaskUsage("RTCTask", RTCTask_stacksize, RTCTaskHandle);
-		printTaskUsage("COMTask", COMTask_stacksize, COMTaskHandle);
-		printTaskUsage("MIXTask", MIXTask_stacksize, MIXTaskHandle);
-	}
-}
-void doAPPWork() {
-	setupGUI();
-	u8g2.clearBuffer();
-	u8g2.sendBuffer();
-	for (;;) {
-		loopGUI();
-        loopPowerOffDetect(swPressedTimeshutDown);
-		osDelay(50);
-	}
-}
-void doMIXWork() {
-	 powerOnDectet(swPressedTimePowerOn);
-	 setupMOV();
-	 setupAHT20();
-	for (;;) {
-//		loopBlink(blinkDelay);
+void loopMIX()
+{
 //		loopI2cScan(1000);
-//		showTaskUsage(2000);
 		loopMOV();
 		loopAHT20();	//4次状态机一次测量
-		osDelay(100);	//也就是0.4s一次AHT20
-	}
+		loopPowerOffDetect(swPressedTimeshutDown);
+//		HAL_Delay(100);	//也就是0.4s一次AHT20
 }
 
 //检查串口键入时间的有效性
@@ -325,28 +297,24 @@ void checkCOMDateTimeAdjustAvailable()
 	}
 }
 
-void doCOMWork() {
-#if 1		//开启或禁用COM线程
+void setupCOM()
+{
 	HAL_UART_Receive_IT(&huart2, aRxTemp, 1); //串口接收中断启动函数
 	DBG_PRINT("MCU: Initialized.\r\n");
-	for (;;) {
+}
+void loopCOM()
+{
 #if DBG_COM_DATE_TIME_ADJ
 		  checkCOMDateTimeAdjustAvailable();
 #else
 		loopUART(HAL_UART_TIMEOUT_VALUE);
 		if (rxSaveCounter && (!txBusy)) {
-		  taskENTER_CRITICAL();	//有必要吗，防止串口突然又来数据进入中断？
 		  checkCOMDateTimeAdjustAvailable();
 		  u2Print(aRxSaveBuffer, rxSaveCounter);
 		  rxSaveCounter = 0;
-		  taskEXIT_CRITICAL();
 		}
 #endif
-		osDelay(500);	//XCOM上位机定时发送数据的周期大于等于osDelay()的时间才不会丢帧
-	}
-#else
-	osDelay(500);
-#endif
+//		HAL_Delay(500);	//XCOM上位机定时发送数据的周期大于等于HAL_Delay()的时间才不会丢帧
 }
 
 void i2cScan(I2C_HandleTypeDef *hi2c, uint8_t i2cBusNum) {
@@ -369,7 +337,7 @@ void i2cScan(I2C_HandleTypeDef *hi2c, uint8_t i2cBusNum) {
 void loopI2cScan(uint16_t ms) {
 	static uint8_t mark = 0;
 	static uint64_t tick_cnt_old = 0;
-	uint64_t tick_cnt = xTaskGetTickCount();
+	uint64_t tick_cnt = HAL_GetTick();
 	if (tick_cnt - tick_cnt_old > ms) {
 		tick_cnt_old = tick_cnt;
 
@@ -386,11 +354,11 @@ void loopI2cScan(uint16_t ms) {
 void powerOnDectet(uint16_t ms) {
 	/*电源使能保持*/
 	//usb_printf("Power On: Waiting...\r\n");
-	uint32_t time = xTaskGetTickCount();
-	while (xTaskGetTickCount() - time < ms) {
-		HAL_Delay(10);	//注意这里不能用osDelay(),因为TIM17的中断好像还未被FreeRTOS配置到FreeRTOS的心跳节拍中同步计数
-						//若在这里使用osDelay会导致按下z中键开机黑屏或oled显示一部分UI死机
-						//切记！，在每个线程的setup之前不能用osDelay()
+	uint32_t time = HAL_GetTick();
+	while (HAL_GetTick() - time < ms) {
+		HAL_Delay(10);	//注意这里不能用HAL_Delay(),因为TIM17的中断好像还未被FreeRTOS配置到FreeRTOS的心跳节拍中同步计数
+						//若在这里使用HAL_Delay会导致按下z中键开机黑屏或oled显示一部分UI死机
+						//切记！，在每个线程的setup之前不能用HAL_Delay()
 	}
 	HAL_GPIO_WritePin(PW_HOLD_GPIO_Port, PW_HOLD_Pin, GPIO_PIN_SET);
 }
@@ -399,7 +367,7 @@ void loopPowerOffDetect(uint16_t msShutDown) {
 	static uint64_t tick_cnt_old = 0;
 	static int64_t tick_sum = 0;
 
-	uint64_t tick_cnt = xTaskGetTickCount();
+	uint64_t tick_cnt = HAL_GetTick();
 	if (tick_cnt - tick_cnt_old > 100) {
 		if (HAL_GPIO_ReadPin(KEY_OK_GPIO_Port, KEY_OK_Pin)
 				== GPIO_PIN_RESET) {
@@ -427,25 +395,33 @@ void setupGUI() {
 	u8g2.setDrawColor(1);
 	u8g2.setBitmapMode(0);	//0是无色也覆盖下层的bitmap，无需u8g2.clearBuffer();
 	//u8g2.drawBitmap(0, 0, bitmap_height_TH_UI_Test, bitmap_width_TH_UI_Test,  bitmap_TH_UI_Test);
+
+	u8g2.clearBuffer();
+	u8g2.sendBuffer();
 }
 
 void loopGUI() {
 //		u8g2.clearBuffer();
 //绘制温湿度信息
 
-		buttons = getButtonState();
+	buttons = getButtonState();
 	switch (buttons) {
 	case BUTTON_NONE:
 		break;
-	case BUTTON_BOTH:
+	case BUTTON_A_SHORT:
 		break;
 	case BUTTON_A_LONG:
 		break;
-	case BUTTON_B_LONG:
-		break;
 	case BUTTON_B_SHORT:
 		break;
-	case BUTTON_A_SHORT:
+	case BUTTON_B_LONG:
+		enterSettingsMenu(); // enter the settings menu
+		u8g2.clearBuffer();
+		u8g2.sendBuffer();
+		break;
+	case BUTTON_BOTH:
+		break;
+	case BUTTON_BOTH_LONG:
 		break;
 	case BUTTON_OK_SHORT:
 		break;
@@ -454,7 +430,6 @@ void loopGUI() {
 	default:
 		break;
 	}
-
 
 	if (th_MeasurementUpload) {
 		th_MeasurementUpload = false;
@@ -510,9 +485,9 @@ void loopGUI() {
 	static uint64_t secondPionthalf1s;		//秒点的半秒标记
 
 	if((secondPrev != now.second()) ||
-			(xTaskGetTickCount() - secondPionthalf1s >= 500))
+			(HAL_GetTick() - secondPionthalf1s >= 500))
 	{
-		secondPionthalf1s = xTaskGetTickCount(); //变相同步了 os系统滴答计时的0.5秒 与 RTC的1秒的 每秒时间
+		secondPionthalf1s = HAL_GetTick(); //变相同步了 os系统滴答计时的0.5秒 与 RTC的1秒的 每秒时间
 		secondPrev = now.second();
 
 		u8g2.setFont(u8g2_font_IPAandRUSLCD_tf);	//8pixel字体
@@ -544,6 +519,9 @@ void loopGUI() {
 
 	//发送oled buffer
 	u8g2.sendBuffer();
+
+
+//	HAL_Delay(50);
 }
 
 DFRobot_AHT20 aht20(&FRToSI2C1);
@@ -599,7 +577,7 @@ inline void readAccelerometer(AxisData *axData, Orientation &rotation) {
 void setupMOV() {
 	// 检测加速度计型号，并做寄存器初始化配置
 	detectAccelerometerVersion();
-	osDelay(50); // wait ~50ms for setup of accel to finalise
+	HAL_Delay(50); // wait ~50ms for setup of accel to finalise
 
 	// 清零没运动的计时标记值（用于判断超时休眠）
 	lastMovementTime = 0;
@@ -664,7 +642,7 @@ void loopMOV() {
 	// If movement has occurred then we update the tick timer
 	// 如果发生了移动，那么我们更新滴答计时器
 	if (axisError > threshold) {
-		lastMovementTime = xTaskGetTickCount();	//更新动作时间
+		lastMovementTime = HAL_GetTick();	//更新动作时间
 		usb_printf("Movement detected!\r\n");		//若触发移动则打印
 	}
 }
@@ -725,7 +703,7 @@ void usb_printf(const char *format, ...) {
  * @return {*}
  */
 void loopUART(uint16_t ms) {
-  if (rxDone || (rxBusy && xTaskGetTickCount() - rxTick > ms)) {
+  if (rxDone || (rxBusy && HAL_GetTick() - rxTick > ms)) {
     rxDone = 1;
     if (rxSaveCounter) return;
     memcpy(aRxSaveBuffer, aRxBuffer, rxCounter);
@@ -756,7 +734,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART2) {
     if (!rxDone) {  //丢弃数据
       rxBusy = 1;
-      rxTick = xTaskGetTickCount();
+      rxTick = HAL_GetTick();
       aRxBuffer[rxCounter++] = aRxTemp[0];
       if (rxCounter > RX_BUFFER_SIZE) {
         rxDone = 1;
@@ -765,56 +743,3 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     HAL_UART_Receive_IT(&huart2, aRxTemp, 1);
   }
 }
-//
-//volatile uint8_t blinkState = 0;
-//const uint16_t blinkDelay = 500;
-//void loopBlink(uint16_t ms) {
-//  static uint32_t tickBlink;
-//    if (xTaskGetTickCount() - tickBlink >= ms) {
-//    	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, !HAL_GPIO_ReadPin(LED_GPIO_Port, LED_Pin));
-//      tickBlink = xTaskGetTickCount();
-//      //u2Print((uint8_t *)"\nBlink\n", 18);
-//
-//    }
-//}
-
-/**
- * 笔记
-/ /sprintf 左对齐补零
- 	把整数123 打印成一个字符串保存在s 中。
-	sprintf(s, "%d", 123); //产生"123"可以指定宽度，不足的左边补空格：
-	sprintf(s, "%8d%8d", 123, 4567); //产生：" 123 4567"当然也可以左对齐：
-	sprintf(s, "%-8d%8d", 123, 4567); //产生："123 4567"
-
-	也可以按照16 进制打印：
-	sprintf(s, "%8x", 4567); //小写16 进制，宽度占8 个位置，右对齐
-	sprintf(s, "%-8X", 4568); //大写16 进制，宽度占8 个位置，左对齐
-
-	这样，一个整数的16 进制字符串就很容易得到，但我们在打印16 进制内容时，通常想要一种左边补0 的等宽格式，那该怎么做呢？很简单，在表示宽度的数字前面加个0 就可以了。
-	sprintf(s, "%08X", 4567); //产生："000011D7"
-	上面以"%d"进行的10 进制打印同样也可以使用这种左边补0 的方式。
- */
-
-/**
- * *AHT20的傻瓜测试代码
-			const uint8_t num_buffer = 9; //最多5个数字（100.00%RH）+小数点+正负号+结束空字符
-			char buffer[num_buffer] ={0};
-
-			DBG_PRINT("temperature(-40~85 C):\r\n");
-			memset(buffer, 0, strlen(buffer));
-//	 Get temp in Celsius (℃), range -40-80℃
-			dtostrf(aht20.getTemperature_C(), 5, 2, buffer, num_buffer); // Convert floating point to char
-			DBG_PRINT("%s C\r\n", buffer);
-			DBG_PRINT("%d C\r\n", (uint16_t)(aht20.getTemperature_C()));
-			memset(buffer, 0, strlen(buffer));
-//	 Get temp in Fahrenheit (F)
-			dtostrf(aht20.getTemperature_F(), 5, 2, buffer, num_buffer); // Convert floating point to char
-		    DBG_PRINT("%s F\r\n", buffer);
-
-		    DBG_PRINT("humidity(0~100):\r\n");
-		    memset(buffer, 0, strlen(buffer));
-//	 Get relative humidity (%RH), range 0-100%RH
-			dtostrf(aht20.getHumidity_RH(), 6, 2, buffer, num_buffer); // Convert floating point to char
-		    DBG_PRINT("%s \%RH\r\n", buffer);
-		    DBG_PRINT("%d \%RH\r\n", (uint16_t)(aht20.getHumidity_RH()));
- */

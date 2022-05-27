@@ -13,7 +13,7 @@
 #include "u8g2.h"
 #include "U8g2lib.h"
 #include "main.h"
-
+#include "u8g2_simsun_9_fontUniSensorChinese.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

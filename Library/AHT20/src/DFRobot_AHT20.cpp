@@ -132,7 +132,7 @@ DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_check_status() {
 DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_wait_process(){
 	//等待传感器自己测量的时间80ms
 	//HAL_Delay(CMD_MEASUREMENT_TIME);
-	osDelay(CMD_MEASUREMENT_TIME);
+	HAL_Delay(CMD_MEASUREMENT_TIME);
 	return MEASReadData;
 }
 
@@ -312,9 +312,9 @@ bool DFRobot_AHT20::startMeasurementReady() {
 	//getStatusData();
 
 	//阻塞！等待测量的时间80ms，靠！
-	//到底是HAL还是osDelay，要不要将这个长任务打断？？
+	//到底是HAL还是HAL_Delay，要不要将这个长任务打断？？
 //	HAL_Delay(CMD_MEASUREMENT_TIME);
-	osDelay(CMD_MEASUREMENT_TIME);
+	HAL_Delay(CMD_MEASUREMENT_TIME);
 
 	//获取连续多个的测量数据寄存器值
 	_pFRToSI2C->Master_Receive(_addr << 1, pData, recvLen);

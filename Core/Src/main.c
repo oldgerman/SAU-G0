@@ -19,7 +19,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -54,23 +53,8 @@ UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
-osThreadId APPTaskHandle;
-uint32_t APPTaskBuffer[ 256 ];
-osStaticThreadDef_t APPTaskControlBlock;
-osThreadId RTCTaskHandle;
-uint32_t RTCTaskBuffer[ 192 ];
-osStaticThreadDef_t RTCTaskControlBlock;
-osThreadId COMTaskHandle;
-uint32_t COMTaskBuffer[ 128 ];
-osStaticThreadDef_t COMTaskControlBlock;
-osThreadId MIXTaskHandle;
-uint32_t MIXTaskBuffer[ 192 ];
-osStaticThreadDef_t MIXTaskControlBlock;
 /* USER CODE BEGIN PV */
-uint16_t APPTask_stacksize;
-uint16_t RTCTask_stacksize;
-uint16_t COMTask_stacksize;
-uint16_t MIXTask_stacksize;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -81,11 +65,6 @@ static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_I2C1_Init(void);
-void StartAPPTask(void const * argument);
-void StartRTCTask(void const * argument);
-void StartCOMTask(void const * argument);
-void StartMIXTask(void const * argument);
-
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -129,98 +108,17 @@ int main(void)
   MX_I2C2_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-//  HAL_GPIO_WritePin(PW_HOLD_GPIO_Port, PW_HOLD_Pin, GPIO_PIN_SET);
-  FRToI2CxSInit();//释放信号量以解锁I2C
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, DISP_RES_Pin|PW_HOLD_Pin|DISP_CS_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(DISP_DC_GPIO_Port, DISP_DC_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : KEY_A_Pin KEY_B_Pin */
-  GPIO_InitStruct.Pin = KEY_A_Pin|KEY_B_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : DISP_RES_Pin PW_HOLD_Pin DISP_CS_Pin */
-  GPIO_InitStruct.Pin = DISP_RES_Pin|PW_HOLD_Pin|DISP_CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : KEY_OK_Pin */
-  GPIO_InitStruct.Pin = KEY_OK_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(KEY_OK_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : DISP_DC_Pin */
-  GPIO_InitStruct.Pin = DISP_DC_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(DISP_DC_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_WritePin(PW_HOLD_GPIO_Port, PW_HOLD_Pin, GPIO_PIN_SET);
+  FRToI2CxSInit();//解锁I2C
+  setup();
   /* USER CODE END 2 */
 
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-
-  /* Create the thread(s) */
-  /* definition and creation of APPTask */
-  osThreadStaticDef(APPTask, StartAPPTask, osPriorityNormal, 0, 256, APPTaskBuffer, &APPTaskControlBlock);
-  APPTaskHandle = osThreadCreate(osThread(APPTask), NULL);
-
-  /* definition and creation of RTCTask */
-  osThreadStaticDef(RTCTask, StartRTCTask, osPriorityRealtime, 0, 192, RTCTaskBuffer, &RTCTaskControlBlock);
-  RTCTaskHandle = osThreadCreate(osThread(RTCTask), NULL);
-
-  /* definition and creation of COMTask */
-  osThreadStaticDef(COMTask, StartCOMTask, osPriorityHigh, 0, 128, COMTaskBuffer, &COMTaskControlBlock);
-  COMTaskHandle = osThreadCreate(osThread(COMTask), NULL);
-
-  /* definition and creation of MIXTask */
-  osThreadStaticDef(MIXTask, StartMIXTask, osPriorityAboveNormal, 0, 192, MIXTaskBuffer, &MIXTaskControlBlock);
-  MIXTaskHandle = osThreadCreate(osThread(MIXTask), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-	APPTask_stacksize = os_thread_def_APPTask.stacksize;
-	RTCTask_stacksize = os_thread_def_RTCTask.stacksize;
-	COMTask_stacksize = os_thread_def_COMTask.stacksize;
-	MIXTask_stacksize = os_thread_def_MIXTask.stacksize;
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* Start scheduler */
-  osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  loop();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -516,82 +414,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartAPPTask */
-/**
-  * @brief  Function implementing the APPTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartAPPTask */
-void StartAPPTask(void const * argument)
-{
-  /* USER CODE BEGIN 5 */
-	doAPPWork();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1000);
-  }
-  /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_StartRTCTask */
-/**
-* @brief Function implementing the RTCTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartRTCTask */
-void StartRTCTask(void const * argument)
-{
-  /* USER CODE BEGIN StartRTCTask */
-	doRTCWork();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1000);
-  }
-  /* USER CODE END StartRTCTask */
-}
-
-/* USER CODE BEGIN Header_StartCOMTask */
-/**
-* @brief Function implementing the COMTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartCOMTask */
-void StartCOMTask(void const * argument)
-{
-  /* USER CODE BEGIN StartCOMTask */
-	doCOMWork();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1000);
-  }
-  /* USER CODE END StartCOMTask */
-}
-
-/* USER CODE BEGIN Header_StartMIXTask */
-/**
-* @brief Function implementing the MIXTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartMIXTask */
-void StartMIXTask(void const * argument)
-{
-  /* USER CODE BEGIN StartMIXTask */
-	doMIXWork();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1000);
-  }
-  /* USER CODE END StartMIXTask */
-}
 
 /**
   * @brief  Period elapsed callback in non blocking mode

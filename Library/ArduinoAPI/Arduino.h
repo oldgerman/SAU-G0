@@ -57,8 +57,8 @@ extern "C" {
 #define LSBFIRST 0x0
 #define MSBFIRST 0x1
 
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
+#define Ardmin(a,b) ((a)<(b)?(a):(b))
+#define Ardmax(a,b) ((a)>(b)?(a):(b))
 #define ABS(x)  (((x)>0)?(x):-(x))//abs(x) is define in stdlib.h
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 #define round(x)     ((x)>=0?(long)((x)+0.5):(long)((x)-0.5))

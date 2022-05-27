@@ -7,7 +7,6 @@
  */
 #include <Buttons.hpp>
 #include "BSP.h"
-#include "cmsis_os.h"
 
 
 #define SW_DELAY 50								//ms 按键中delay的时间
@@ -31,7 +30,7 @@ bool waitingToChooseOneFromTwo()
 	int8_t ok = -1;
 	for(;;)
 	{
-		resetWatchdog();
+//		resetWatchdog();
 		ButtonState buttons = getButtonState();
 		switch(buttons)
 		{
@@ -46,7 +45,7 @@ bool waitingToChooseOneFromTwo()
 		}
 		if(ok != -1)
 			break;
-		osDelay(SW_DELAY);
+		HAL_Delay(SW_DELAY);
 		static int8_t cntBuzzerTime = 0;
 		cntBuzzerTime++;
 		if(cntBuzzerTime == 3)
@@ -117,7 +116,7 @@ ButtonState readButtonState() {
   currentOKState = getButtonOK();
 
   if (currentABState || currentOKState)
-    lastButtonTime = xTaskGetTickCount();
+    lastButtonTime = HAL_GetTick();
 
 
 /*
@@ -128,7 +127,7 @@ ButtonState readButtonState() {
   ButtonState retOKVal = BUTTON_NONE;
   if (currentOKState == previousOKState)
   {
-	if((currentOKState == 1) && ((xTaskGetTickCount() - previousOKStateChange) > timeout))
+	if((currentOKState == 1) && ((HAL_GetTick() - previousOKStateChange) > timeout))
 	{
 		retOKVal =  BUTTON_OK_LONG; // Both being held case
 		return retOKVal;
@@ -137,11 +136,11 @@ ButtonState readButtonState() {
   }
   else	// currentOKState != previousOKState
   {
-    if ((xTaskGetTickCount() - previousOKStateChange) < timeout)
+    if ((HAL_GetTick() - previousOKStateChange) < timeout)
           retOKVal = BUTTON_OK_SHORT;
 
     previousOKState       = currentOKState;
-    previousOKStateChange = xTaskGetTickCount();
+    previousOKStateChange = HAL_GetTick();
     return retOKVal;
   }
 
@@ -151,7 +150,7 @@ ButtonState readButtonState() {
   {
     if (currentABState == 0)
       return BUTTON_NONE;
-    if ((xTaskGetTickCount() - previousABStateChange) > timeout) {
+    if ((HAL_GetTick() - previousABStateChange) > timeout) {
       // User has been holding the button down
       // We want to send a button is held message
       if (currentABState == 0x01)// && buttons != BUTTON_IDLE)
@@ -181,7 +180,7 @@ ButtonState readButtonState() {
       // User has released buttons
       // If they previously had the buttons down we want to check if they were <
       // long hold and trigger a press
-      if ((xTaskGetTickCount() - previousABStateChange) < timeout) {
+      if ((HAL_GetTick() - previousABStateChange) < timeout) {
         // The user didn't hold the button for long
         // So we send button press
 
@@ -194,7 +193,7 @@ ButtonState readButtonState() {
       }
     }
     previousABState       = currentABState;
-    previousABStateChange = xTaskGetTickCount();
+    previousABStateChange = HAL_GetTick();
     return retVal;
   }
 
@@ -208,29 +207,29 @@ void waitForButtonPress() {
   ButtonState buttons = getButtonState();
   while (buttons) {
     buttons = getButtonState();
-    osDelay(SW_DELAY);
+    HAL_Delay(SW_DELAY);
   }
   while (!buttons) {
     buttons = getButtonState();
-    osDelay(SW_DELAY);
+    HAL_Delay(SW_DELAY);
   }
 }
 
 void waitForButtonPressOrTimeout(uint32_t timeout) {
-  timeout += xTaskGetTickCount();
+  timeout += HAL_GetTick();
   // calculate the exit point
 
   ButtonState buttons = getButtonState();
   while (buttons) {
     buttons = getButtonState();
-    osDelay(SW_DELAY);
-    if (xTaskGetTickCount() > timeout)
+    HAL_Delay(SW_DELAY);
+    if (HAL_GetTick() > timeout)
       return;
   }
   while (!buttons) {
     buttons = getButtonState();
-    osDelay(SW_DELAY);
-    if (xTaskGetTickCount() > timeout)
+    HAL_Delay(SW_DELAY);
+    if (HAL_GetTick() > timeout)
       return;
   }
 }

@@ -47,7 +47,7 @@ void Delay_Init(void)
   */
 void SysTick_Handler(void)
 {
-    System_ms++;//将此句yidaoHAL库定义的SysTick_Handler
+    System_ms++;//将此句移到HAL库定义的SysTick_Handler
 }
 #else
 

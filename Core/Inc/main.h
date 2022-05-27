@@ -32,7 +32,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "cmsis_os.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -91,15 +91,7 @@ extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern UART_HandleTypeDef huart2;
 
-extern uint16_t APPTask_stacksize;
-extern uint16_t RTCTask_stacksize;
-extern uint16_t COMTask_stacksize;
-extern uint16_t MIXTask_stacksize;
 
-extern osThreadId APPTaskHandle;
-extern osThreadId COMTaskHandle;
-extern osThreadId RTCTaskHandle;
-extern osThreadId MIXTaskHandle;
 void usb_printf(const char *format, ...);
 /* USER CODE END Private defines */
 

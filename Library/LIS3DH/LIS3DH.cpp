@@ -8,7 +8,7 @@
 #include <array>
 
 #include "LIS3DH.hpp"
-#include "cmsis_os.h"
+//#include "cmsis_os.h"
 
 /*
  * ironOS的LIS3DH工作在12bit 1mg/digit，即[-2048, +2048]mg，即量程±2g

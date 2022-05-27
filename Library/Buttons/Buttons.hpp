@@ -15,15 +15,17 @@
 		switch (buttons) {
 		case BUTTON_NONE:
 			break;
-		case BUTTON_BOTH:
+		case BUTTON_A_SHORT:
 			break;
 		case BUTTON_A_LONG:
 			break;
-		case BUTTON_B_LONG:
-			break;
 		case BUTTON_B_SHORT:
 			break;
-		case BUTTON_A_SHORT:
+		case BUTTON_B_LONG:
+			break;
+		case BUTTON_BOTH:
+			break;
+		case BUTTON_BOTH_LONG:
 			break;
 		case BUTTON_OK_SHORT:
 			break;

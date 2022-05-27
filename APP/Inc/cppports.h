@@ -53,17 +53,31 @@ void loopUART(uint16_t ms);
 void loopPowerOffDetect(uint16_t msShutDown);
 void loopI2cScan(uint16_t ms);
 
-void setupAHT20();
+
+void setup();
+void loop();
+
 void setupGUI();
-void setupMOV();
-void loopAHT20();
-void loopMOV();
 void loopGUI();
 
-void doAPPWork();//低优先级时间片调度任务：用户APP和UI绘图，SPI的发送其实可以改到DMA
-void doRTCWork();//IRQ任务优先级最高：RTC中断输出1Hz方波同步计时，暂时未实现通过IRQ释放信号量解除阻塞
-void doCOMWork();//高优先级后台任务：串口收发，其实可以用接收中断的信号量阻塞任务
-void doMIXWork();//较高优先级后台任务：传感器数据检测
+void setupCOM();
+void loopCOM();
+
+void setupRTC();
+void loopRTC();
+
+void loopMIX();
+	void setupAHT20();
+	void loopAHT20();
+	void setupMOV();
+	void loopMOV();
+
+void powerOnDectet(uint16_t ms);
+void loopPowerOffDetect(uint16_t msShutDown);
+//void doAPPWork();//低优先级时间片调度任务：用户APP和UI绘图，SPI的发送其实可以改到DMA
+//void doRTCWork();//IRQ任务优先级最高：RTC中断输出1Hz方波同步计时，暂时未实现通过IRQ释放信号量解除阻塞
+//void doCOMWork();//高优先级后台任务：串口收发，其实可以用接收中断的信号量阻塞任务
+//void doMIXWork();//较高优先级后台任务：传感器数据检测
 /* USER CODE END EFP */
 
 /* 私有定义 Private defines --------------------------------------------------*/
