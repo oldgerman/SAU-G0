@@ -40,7 +40,8 @@ extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 #define SLEEP_TIME		60U		//60S 后进入休眠
 
 /*
- * 用于储存不经常修改的Uni-Sensor设置信息，存在STM32片内Flash
+ * 用于储存不经常修改的Uni-Sensor设置信息，存在STM32片内Flash，
+ * 需要在Colum修改的变量必须为uint16_t类型
  * 此结构必须是2bytes(16bit)的倍数(例如uint16_t int16_t float)，因为它是以uint16_t块的形式在flash里保存/加载
  * This struct must be a multiple of 2 bytes as it is saved / restored from
  * flash in uint16_t chunks
@@ -69,7 +70,8 @@ typedef struct {
 } systemSettingsType;
 
 /*
- * 用于储存频繁擦写的数据采集信息，存在片外 EEPROM
+ * 用于储存频繁擦写的数据采集信息，存在片外 EEPROM，
+ * 需要在Colum修改的变量必须为uint16_t类型
  * 此结构必须是1bytes(16bit)的类型，若单个类型大于1byte需要使用union进行特殊转换操作
  */
 typedef struct {
@@ -80,20 +82,20 @@ typedef struct {
 	uint16_t NumOfDataCollected;	// 已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)
 	uint16_t NumOfDataWillCollect;	// 将采集的数据组个数
 	//任务开始日期
-	uint8_t STyy;
-	uint8_t STMM;
-	uint8_t STdd;
-	uint8_t SThh;
-	uint8_t STmm;
-	uint8_t STss;
+	uint16_t STyy;
+	uint16_t STMM;
+	uint16_t STdd;
+	uint16_t SThh;
+	uint16_t STmm;
+	uint16_t STss;
 	//任务采集周期（+ 任务开始日期，可以配合RTClib的opertor算出结束日期）
-	uint8_t Thh;	//>24小时后, 换算为天
-	uint8_t Tmm;
-	uint8_t Tss;
+	uint16_t Thh;	//>24小时后, 换算为天
+	uint16_t Tmm;
+	uint16_t Tss;
 	//每个周期采集样本数（给滤波器的处理为一组数据，不会存未经滤波的多个数据组）
-	uint8_t TSamples;						//暂时不支持单独设置某一对象的样本数
+	uint16_t TSamples;						//暂时不支持单独设置某一对象的样本数
 	//采集对象
-	uint8_t BinCodeOfEnCollect;				//B00000000; 使用1byte位数组充当8个bool类型
+	uint16_t BinCodeOfEnCollect;				//B00000000; 使用1byte位数组充当8个bool类型
 											// 76543210
 											// bit[0]: （LSB）RTC时间完整性标志位
 											// bit[1]: 温湿度计--温度

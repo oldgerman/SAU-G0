@@ -7,8 +7,8 @@
 #include "CustomPage.hpp"
 
 
-const char *strChooseOneFromTwo = 	  "OK  CXL";	//Cancel的英文简称是CXL
-const char *strfeaturesNotRealized = "暂未实现!";
+const char *strChooseOneFromTwo 	= "OK   CXL";	//Cancel的英文简称是CXL
+const char *strfeaturesNotRealized = "暂未实现";
 /*
  * Colum对象位数组指定位修改API
  */
@@ -37,7 +37,7 @@ bool colums_StrChooseOneFromTwo(bool featuresRealized, const char *str) {
 	u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese); //12x12 pixels
 	u8g2.clearBuffer();
 	u8g2.sendBuffer();	//立即发送空buffer,消除残影和乱码
-	uint8_t y = 0;
+	uint8_t y = 13; 	//偏移字符串y坐标
 	if (featuresRealized)	//若功能实现
 	{
 		if(!str)

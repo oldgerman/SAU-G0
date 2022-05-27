@@ -11,71 +11,44 @@
 //#include "configuration.h"
 #include "dtostrf.h"
 
-uint16_t valColumTest = 200;
-uint16_t valColumBool = 0;
-
-#if 0
-#endif
-/******************** 构造二级或三级菜单Colum对象 ********************/
+/******************** 构造二级或三级菜单Colum或Page对象 ********************/
 //数据采集--开始日期
 std::vector<Colum> columsDataCollectSTDateTime = {
-		Colum("年", &eepromSettings.STyy, 3, 99, 0, 1, 10),
-		Colum("月", &eepromSettings.STMM, 3, 12, 1, 1, 10),
-		Colum("日", &eepromSettings.STdd, 3, 31, 1, 1, 10),
-		Colum("时", &eepromSettings.SThh, 3, 23, 0, 1, 10),
-		Colum("分", &eepromSettings.STmm, 3, 59, 0, 1, 10),
-		Colum("秒", &eepromSettings.STss, 3, 59, 0, 1, 10)
+		Colum("年", &eepromSettings.STyy, 2, 99, 0, 1, 10),
+		Colum("月", &eepromSettings.STMM, 2, 12, 1, 1, 10), //一旦加减它就溢出
+		Colum("日", &eepromSettings.STdd, 2, 31, 1, 1, 10),
+		Colum("时", &eepromSettings.SThh, 2, 23, 0, 1, 10),//一旦加减它就溢出
+		Colum("分", &eepromSettings.STmm, 2, 59, 0, 1, 10),
+		Colum("秒", &eepromSettings.STss, 2, 59, 0, 1, 10) //一旦加减它就溢出
 };
 
 Page pageDataCollectSTDateTime(&columsDataCollectSTDateTime);
 
 //数据采集--采集周期
 std::vector<Colum> columsDataCollectT = {
-		Colum("时", &eepromSettings.Thh, 3, 23, 0, 1, 10),
-		Colum("分", &eepromSettings.Tmm, 3, 59, 0, 1, 10),
-		Colum("秒", &eepromSettings.Tss, 3, 59, 0, 1, 10)
+		Colum("时", &eepromSettings.Thh, 2, 23, 0, 1, 10),
+		Colum("分", &eepromSettings.Tmm, 2, 59, 0, 1, 10),	//一旦加减它就溢出
+		Colum("秒", &eepromSettings.Tss, 2, 59, 0, 1, 10)
 };
 
 Page pageDataCollectT(&columsDataCollectT);
+
+//数据采集--任务设置
+std::vector<Colum> columsDataCollect_ScheduleSetting = {
+		Colum("单次样本", &eepromSettings.TSamples, 2, 10, 1, 1, 10),
+		Colum("采集周期", &pageDataCollectT),
+		Colum("开始日期", &pageDataCollectSTDateTime)	//	级联三级菜单
+//		Colum("结束日期", &pageDataCollectxxx)			//	自动计算出
+};
+
+Page pageDataCollect_ScheduleSetting(&columsDataCollect_ScheduleSetting);
+
 //数据采集
 std::vector<Colum> columsDataCollect = {
+		Colum("任务设置", &pageDataCollect_ScheduleSetting),
 		Colum("任务进度", columsDataCollected_Schedule),
-		Colum("开始日期", &pageDataCollectSTDateTime),	//	级联三级菜单
-//		Colum("结束日期", &pageDataCollectxxx),				//	级联三级菜单
-		Colum("开始任务", &eepromSettings.BinCodeOfEnCollect, 1, 1, 0, 1, 1, " ", coulmBinCodeAdj, LOC_ENTER),	//如何操作位数组元素？用指针获取当前Colum第几个然后识别吧
-		Colum("采集周期", &pageDataCollectT),
-		Colum("单次样本", &eepromSettings.TSamples, 2, 10, 1, 1, 10)
-};
-
-
-
-//显示设置
-/* 这个页的Coulms比正常的3少一个*/
-std::vector<Colum> columsDisplaySettings = {
-		Colum("屏幕亮度", &systemSettings.ScreenBrightness, 3, 100, 1, 1, 10, "%", columsScreenSettings_Brightness, LOC_CHANGE),
-		Colum("开机图标", &systemSettings.PowerOnShowLogo, 1, 1, 0, 1, 1)
-};
-
-/* 测试用 */
-//std::vector<Colum> columsDisplaySettings2 = {
-//		Colum("屏幕亮度", &systemSettings.ScreenBrightness, 3, 100, 1, 1, 10, "%", columsScreenSettings_Brightness, LOC_CHANGE)
-//};
-
-//休眠唤醒
-std::vector<Colum> columsScreenOffAndWKUP = {
-		Colum("动作阈值", &systemSettings.Sensitivity, 3, 100, 1, 1, 10, "%"),
-		Colum("自动休眠", &systemSettings.SleepEn, 1, 1, 0, 1, 1),
-		Colum("时间阈值", &systemSettings.SleepTime, 3, 900, 0, 1, 10, "S")	//最多亮屏15分钟
-};
-
-
-
-//辅助功能
-std::vector<Colum> columsAccessibility = {
-		Colum("扫描设备", 	columsAccessibility_I2CScaner, LOC_ENTER),
-		Colum("电池信息", 	columsAccessibility_Battery, LOC_ENTER),
-		Colum("重启", 		columsHome_Reset, LOC_ENTER),
-		Colum("恢复出厂",	columsAccessibility_ResetSettings, LOC_ENTER)
+		Colum("运行任务", &eepromSettings.BinCodeOfEnCollect, 1, 1, 0, 1, 1, " ", coulmBinCodeAdj, LOC_ENTER),	//如何操作位数组元素？用指针获取当前Colum第几个然后识别吧
+		Colum("删除任务", colum_FeaturesUnrealized)
 };
 
 //日期时间
@@ -89,39 +62,43 @@ std::vector<Colum> columsDateTime = {
 		Colum("更改时间", columsDateTime_ChangeDateTime, LOC_ENTER)	//这里也要检查时间有效性
 };
 
+//显示设置
+/* 这个页的Coulms比正常的3少一个*/
+std::vector<Colum> columsDisplaySettings = {
+		Colum("屏幕亮度", &systemSettings.ScreenBrightness, 3, 100, 1, 1, 10, "%", columsScreenSettings_Brightness, LOC_CHANGE),
+		Colum("开机图标", &systemSettings.PowerOnShowLogo, 1, 1, 0, 1, 1)
+};
 
+//休眠唤醒
+std::vector<Colum> columsScreenOffAndWKUP = {
+		Colum("动作阈值", &systemSettings.Sensitivity, 3, 100, 1, 1, 10, "%"),
+		Colum("自动休眠", &systemSettings.SleepEn, 1, 1, 0, 1, 1),
+		Colum("时间阈值", &systemSettings.SleepTime, 3, 900, 0, 1, 10, "S")	//最多亮屏15分钟
+};
+
+//辅助功能
+std::vector<Colum> columsAccessibility = {
+		Colum("扫描设备", 	columsAccessibility_I2CScaner, LOC_ENTER),
+		Colum("电池信息", 	columsAccessibility_Battery, LOC_ENTER),
+		Colum("重启", 		columsHome_Reset, LOC_ENTER),
+		Colum("恢复出厂",	columsAccessibility_ResetSettings, LOC_ENTER)
+};
 
 /******************** 构造二级菜单Page对象 ********************/
 Page pageDataCollect(&columsDataCollect);
 Page pageDateTime(&columsDateTime);
 Page pageDisplaySettings(&columsDisplaySettings);
-//Page pageDisplaySettings2(&columsDisplaySettings2);	//测试用
 Page pageScreenOffAndWKUP(&columsScreenOffAndWKUP);
 Page pageAccessibility(&columsAccessibility);
 
-
 /******************** 构造一级菜单Colum对象 ********************/
 std::vector<Colum> columsHome = {
-#if 1
 		Colum("数据采集", &pageDataCollect),
 		Colum("日期时间", &pageDateTime),
 		Colum("显示设置", &pageDisplaySettings),
-//		Colum("显设", &pageDisplaySettings2),		//测试用
 		Colum("休眠唤醒", &pageScreenOffAndWKUP),
 		Colum("辅助功能", &pageAccessibility),
 		Colum("版本信息", columsHome_ShowVerInfo)
-#else
-		Colum("数据采集", columsHome_ShowVerInfo),
-		Colum("日期时间", &pageDateTime),
-//		Colum("日期时间", columsHome_ShowVerInfo),
-//		Colum("显示设置", &pageDisplaySettings),
-		Colum("显示设置", columsHome_ShowVerInfo),
-		Colum("休眠唤醒", columsHome_ShowVerInfo),
-//		Colum("休眠唤醒", &pageScreenOffAndWKUP),
-		Colum("辅助功能", columsHome_ShowVerInfo),
-//		Colum("辅助功能", &pageAccessibility),
-		Colum("版本信息", columsHome_ShowVerInfo)
-#endif
 };
 
 /******************** 构造一级菜单Page对象 ********************/

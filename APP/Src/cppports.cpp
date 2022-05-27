@@ -108,6 +108,7 @@ static MillisTaskManager mtmMain;
 
 void setup(){
 	powerOnDectet(swPressedTimePowerOn);
+	resetSettings();	//恢复设置（暂时用重置设置代替）
 	setupGUI();
 	setupCOM();
 	setupRTC();

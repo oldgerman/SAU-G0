@@ -24,14 +24,14 @@ enum FunLoc {
 class Page;	//前置声明
 
 /**
- * 构造时val支持char、int8_t、uint8_t、int16_t、uint16_t、float等不大于2byte的类型，
+ * 构造时val支持char、int8_t、uint8_t、int16_t、uint16_t等不大于2byte的类型，
  * 使用1byte类型取val时需要强制转换
  */
 class AutoValue {
 public:
 	AutoValue() {
 	}
-	AutoValue(void *Val, uint8_t Places, uint16_t Upper, uint16_t Lower,	//注意val是泛型指针
+	AutoValue(uint16_t *Val, uint8_t Places, uint16_t Upper, uint16_t Lower,	//注意val是泛型指针
 			uint8_t ShortSteps, uint8_t LongSteps = 0, bool FollowButtonState =
 					true, bool ValueCycle = false) :
 			val(Val), places(Places), upper(Upper), lower(Lower), shortSteps(
@@ -52,7 +52,7 @@ public:
 		return *(uint16_t*)val;
 	}
 
-	uint16_t& operator--(int) {
+	uint16_t operator--(int) {
 		if ((buttonState == BUTTON_A_SHORT || !followButtonState)
 				&& shortSteps != 0)
 			stepsLess(shortSteps);
@@ -96,14 +96,8 @@ public:
 			}
 		}
 	}
-	char* 		getValchar() 		{ return (char*)val; }
-	int8_t* 	getValin8_t() 		{ return (int8_t*)val; }
-	int16_t* 	getValin16_t() 		{ return (int16_t*)val; }
-	uint8_t* 	getValuin8_t() 		{ return (uint8_t*)val; }
-	uint16_t* 	getValuint16_t() 	{ return (uint16_t*)val; }
-	float* 		getValfloat() 		{ return (float*)val; }
 
-	void *val;				//待修改值，为了兼容1byte和2byte数据类型而使用模板太麻烦了，改为泛型指针好了。。。
+	uint16_t *val;				//待修改值，为了兼容1byte和2byte数据类型而使用模板太麻烦了，改为泛型指针好了。。。
 	uint8_t places;			//值的位数
 	uint16_t upper;			//值的上限
 	uint16_t lower;			//值的下限
@@ -126,15 +120,15 @@ public:
 		ptrColumVal2Str = nullptr;
 	}
 
-	Colum(const char *Str, void *Val, uint8_t Places, uint16_t Upper,	//注意val是泛型指针
+	Colum(const char *Str, uint16_t *Val, uint8_t Places, uint16_t Upper,	//注意val是泛型指针
 			uint16_t Lower, uint8_t ShortSteps, uint8_t LongSteps = 0,
 			const char *Uint = nullptr, void (*FunPtr)(void) = nullptr,
 			FunLoc FunLoc = LOC_NONE,
 			std::map<uint16_t, const char*> *PtrColumVal2Str = nullptr) :
 			str(Str), unit(Uint), funPtr(FunPtr), funLoc(FunLoc), ptrColumVal2Str(
 					PtrColumVal2Str) {
-		static AutoValue autovalue(Val, Places, Upper, Lower, ShortSteps, LongSteps);
-		ptrAutoValue = &autovalue;
+		ptrAutoValue = new AutoValue(Val, Places, Upper, Lower, ShortSteps, LongSteps);
+//		ptrAutoValue = nullptr;
 		nextPage = nullptr;
 	}
 

@@ -39,7 +39,7 @@ void Page::flashPage() {
 
 	//主逻辑
 	for (;;) {
-		valIndex = *(uint8_t*)(indexColums.val);
+		valIndex = *(indexColums.val);
 		buttons = getButtonState();
 
 		switch (buttons) {
@@ -84,7 +84,7 @@ void Page::flashPage() {
 					ptrPageList.push_back(ptrPage);	//不是pageHome，那么就是下级page，将它的地址放到ptrPageList末尾
 				}
 
-				ptrPage->_indexColumsVal = *(uint8_t*)indexColums.val;
+				ptrPage->_indexColumsVal = *indexColums.val;
 				ptrPage = (*ptrPage->_itrColums)->nextPage; //当前页面指针指向当前页面指针指向的Colum的下级菜单，可能为nullptr
 				restorePageIndex(true);						//重置indexColums和_iterColums到下级Page对象的情况
 			}
@@ -111,7 +111,7 @@ void Page::flashPage() {
 #if DoubleMenu	/*仅支持二级菜单*/
 			ptrPage = homePage;
 #else		/*支持三级及以上菜单*/
-			ptrPage->_indexColumsVal = *(uint8_t*)indexColums.val;	//记忆本page的_indexColumsVal
+			ptrPage->_indexColumsVal = *indexColums.val;	//记忆本page的_indexColumsVal
 			ptrPage = ptrPageList.back();			//此时ptrPage才是前一个Page*
 
 			if(ptrPage != ptrPageList.front()) 		//if内的语句检查是否为homePage情况，防止删除
@@ -120,7 +120,14 @@ void Page::flashPage() {
 			restorePageIndex(true);
 		}
 
-		ptrPage->drawColums();
+		//非改值情况快速查看本Page所有Colum的值（只在str遮盖住val和unit情况下有用）
+		if(buttons == BUTTON_BOTH || buttons == BUTTON_BOTH_LONG ) {
+			ptrPage->drawColums(true);
+		}
+		else {
+			ptrPage->drawColums(false);
+		}
+
 		u8g2.sendBuffer();
 		HAL_Delay(MENU_DELAY);
 
@@ -133,6 +140,9 @@ void Page::flashPage() {
 			if(!lastExit )
 			{
 				lastExit = lastExitCnt;
+//				在此处(退出homePage时)才保存值
+//				saveSettings();
+//				restoreSettings();
 				break;
 			}
 		}
@@ -158,11 +168,10 @@ void Page::columValAdjust(const Colum *ptrColum) {
 				lastChange = HAL_GetTick();
 			AutoValue::buttonState = buttons;
 
-			//taskENTER_CRITICAL();	//临界段代码，防止绘图时被打乱出现错位
 			switch (buttons) {
 			case BUTTON_A_LONG:
 			case BUTTON_A_SHORT:
-				(*ptrAutoValue)--;//AutoValue::operator--()在内部判断buttons长按短按
+				(*ptrAutoValue)--;	//AutoValue::operator--()在内部判断buttons长按短按
 				if (ptrColum->funLoc == LOC_CHANGE)
 					ptrColum->funPtr();
 				break;
@@ -176,23 +185,23 @@ void Page::columValAdjust(const Colum *ptrColum) {
 				break;
 			}
 
-			uint16_t y = *(uint16_t*)(indexColums.val);
-			ptrPage->drawColum(ptrColum, y, 1);
+			uint16_t y = *(indexColums.val);
+			ptrPage->drawColum(ptrColum, y, 1, true);
 			y += 1;
 			u8g2.setDrawColor(0);
-			u8g2.drawStr(82, y, "*");	//绘制更改标记
-			//taskEXIT_CRITICAL();
+			u8g2.drawStr(OLED_WIDTH - 46, y + 11, "*");	//绘制更改标记
 			u8g2.sendBuffer();
 
 			if ((HAL_GetTick() - lastChange > 2000)
 					|| (buttons == BUTTON_OK_SHORT)) {
 				if (ptrColum->funLoc == LOC_EXTI)
 					ptrColum->funPtr();
-				if (ptrColum->ptrAutoValue != nullptr) {
-					saveSettings();
-					resetSettings();
-					restoreSettings();
-				}
+//				不在此处保存值, 最后退出homePage时才保存
+//				if (ptrColum->ptrAutoValue != nullptr) {
+//					saveSettings();
+//					resetSettings();
+//					restoreSettings();
+//				}
 				return;
 			}
 
@@ -201,24 +210,24 @@ void Page::columValAdjust(const Colum *ptrColum) {
 	}
 }
 
-void Page::drawColums() {
+void Page::drawColums(bool forceDislayColumVal) {
 	//绘制被选中的colum
-	drawColum(*_itrColums, *(uint8_t*)(indexColums.val), 1);
+	drawColum(*_itrColums, *(indexColums.val), 1, forceDislayColumVal);
 	//绘制被选中colum上面的colum
-	for (uint8_t i = indexColums.lower; i < *(uint8_t*)(indexColums.val);) {
+	for (uint8_t i = indexColums.lower; i < *(indexColums.val);) {
 		i += indexColums.shortSteps;
 		drawColum(
 				*_itrColums
-						- (*(uint8_t*)(indexColums.val) - indexColums.lower)
+						- (*(indexColums.val) - indexColums.lower)
 								/ indexColums.shortSteps
 						+ (i / indexColums.shortSteps) - 1,
-				i - indexColums.shortSteps, 0);
+				i - indexColums.shortSteps, 0, forceDislayColumVal);
 	}
 	//绘制被选中colum下面的colum
-	for (uint8_t i = 0; i < indexColums.upper - *(uint8_t*)(indexColums.val);) {
+	for (uint8_t i = 0; i < indexColums.upper - *(indexColums.val);) {
 		i += indexColums.shortSteps;
 		drawColum(*_itrColums + (i / indexColums.shortSteps),
-				*(uint8_t*)(indexColums.val) + i, 0);
+				*(indexColums.val) + i, 0, forceDislayColumVal);
 	}
 
 	//针对栏数小于oled一页显示的最大数，在不显示栏的地方绘制黑色矩形
@@ -232,69 +241,90 @@ void Page::drawColums() {
 	}
 }
 
-void Page::drawColum(const Colum *ptrColum, int8_t y, uint8_t selected) {
-		//绘制反显矩形
-		if(selected != 2) {
+void Page::drawColum(const Colum *ptrColum, int8_t y, uint8_t selected, bool valAdjusting) {
+	//绘制反显矩形
+	if(selected != 2) {
+		u8g2.setDrawColor(selected);
+		u8g2.drawBox(0, y, 64, 16);
+		u8g2.setDrawColor(!selected);
+	}
+	else
+	{
+		//不要绘制黑色矩形，动画过渡会闪屏
+		//u8g2.setDrawColor(!selected);
+		//u8g2.drawBox(0, y, 64, 16);
+
+		u8g2.setDrawColor(selected); //color 2模式
+	}
+
+	//绘制栏名称字符,宋体UTF-8
+#define DRAW_COLUM_Y_OFFSET 13U
+	y += DRAW_COLUM_Y_OFFSET;	//偏移字符串y坐标
+	int8_t y1 = y, y2 = y, y3 = y;
+
+
+	if (ptrColum->str != nullptr) {
+		u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese);	//12x12 pixels
+		u8g2.setFontRefHeightText();
+		u8g2.drawUTF8(1, y, ptrColum->str);	//打印中文字符，编译器需要支持UTF-8编码，显示的字符串需要存为UTF-8编码
+	}
+
+	//若Colum对象存在待修改的值
+	if (ptrColum->ptrAutoValue != nullptr) {
+
+		//Colum的str对象长度是否与val和unit部分有显示重叠,中文字符宽度为13像素，有重叠则仅在改值情况下绘制遮罩矩形，否则不绘制val和unit
+		if((!valAdjusting && ((strlen(ptrColum->str) / 3)*13 < (OLED_WIDTH - 49))) || valAdjusting){
+
 			u8g2.setDrawColor(selected);
-			u8g2.drawBox(0, y, 64, 16);
+			u8g2.drawBox(OLED_WIDTH - 49, y - DRAW_COLUM_Y_OFFSET, 64, 16);
 			u8g2.setDrawColor(!selected);
-		}
-		else
-		{
-			//不要绘制黑色矩形，动画过渡会闪屏
-			//u8g2.setDrawColor(!selected);
-		    //u8g2.drawBox(0, y, 64, 16);
 
-			u8g2.setDrawColor(selected); //color 2模式
-		}
 
-		//绘制栏名称字符,宋体UTF-8
-		y += (2 + 11);	//偏移字符串y坐标
-		int8_t y1 = y, y2 = y, y3 = y;
 
-		if (ptrColum->str != nullptr) {
-			u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese);	//12x12 pixels
-			u8g2.setFontRefHeightText();
-			u8g2.drawUTF8(1, y, ptrColum->str);	//打印中文字符，编译器需要支持UTF-8编码，显示的字符串需要存为UTF-8编码
-		}
-
-#if 1
-		if (ptrColum->ptrAutoValue != nullptr) {
 			//绘制栏详情字符
-
 			if (!(*ptrColum->ptrAutoValue).valueIsBool() ||
 					(ptrColum->ptrColumVal2Str != nullptr)) 	//针对只有0和1两个值map string的情况
 			{
+				//如果数字值存在到中文字符映射
 				if(ptrColum->ptrColumVal2Str != nullptr)
 				{
-					std::map<uint16_t, const char*>::iterator itr = ptrColum->ptrColumVal2Str->find(*(uint16_t*)(ptrColum->ptrAutoValue)->val);
-					u8g2.drawUTF8( 128 -  strlen(itr->second) / 3 /*"中" = 3 "中文" = 6 "中文字" = 9;=*/
+					std::map<uint16_t, const char*>::iterator itr =
+							ptrColum->ptrColumVal2Str->find(*(ptrColum->ptrAutoValue)->val);
+					u8g2.drawUTF8( OLED_WIDTH -  strlen(itr->second) / 3 /*"中" = 3 "中文" = 6 "中文字" = 9;=*/
 							* 12/*12=字体宽度*/ -3 /*边缘偏移*/, y1, itr->second);
 				}
+				//否则绘制数字值
 				else
 				{
 					// 修改字体为非中文字体
 					u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
 					u8g2.setFontRefHeightText();
-#if 1
-					Page::drawNumber(113 - (ptrColum->ptrAutoValue->places) * 6, y2,
-							*(uint16_t*)(ptrColum->ptrAutoValue)->val,
-							(ptrColum->ptrAutoValue)->places);
-#endif
-					if (ptrColum->unit != nullptr)
-						u8g2.drawStr(119, y2, ptrColum->unit);	//	绘制单位
+
+					bool is2Byte = false;
+					if(ptrColum->ptrAutoValue->places > 2) {	//根据ptrAutoValue的Places，即位数，判断是多少byte的类型，对1byte类型若强制转2byte，传入drawNumber内部会程序会崩溃
+						is2Byte = true;
+					}
+					Page::drawNumber((OLED_WIDTH - 15) - (ptrColum->ptrAutoValue->places) * 6, y2,
+							is2Byte?(*(ptrColum->ptrAutoValue)->val):(*(ptrColum->ptrAutoValue)->val),
+						(ptrColum->ptrAutoValue)->places);
+
+					if (ptrColum->unit != nullptr) {
+						u8g2.drawStr((OLED_WIDTH - 10), y2, ptrColum->unit);	//	绘制单位
+					}
 				}
 			}
+
+
 			else	//为“虚拟bool类型”，特殊处理
 			{
 				u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
 				u8g2.setFontRefHeightText();
-				(*(uint8_t*)(ptrColum->ptrAutoValue)->val == true) ?
-						u8g2.drawStr(111, y3, "ON") :
-						u8g2.drawStr(103, y3, "OFF");
+				(*(ptrColum->ptrAutoValue)->val == true) ?
+						u8g2.drawStr(OLED_WIDTH - 17, y3, "ON") :
+						u8g2.drawStr(OLED_WIDTH - 25, y3, "OFF");
 			}
+		}
 	}
-#endif
 }
 
 
@@ -332,7 +362,7 @@ bool Page::stateTimeOut() {
 void Page::restorePageIndex(bool restore) {
 	if (restore) {	//如果恢复栏index变量
 		//定向选中栏到最后一次退出上级菜单的情况（根据私有成员_indexColumsVal记录的上一级菜单下，选中栏的最后位置（由static AutoValue indexColums的val值决定的））,
-		*(uint8_t*)(indexColums.val) = ptrPage->_indexColumsVal;
+		*(indexColums.val) = ptrPage->_indexColumsVal;
 
 		/* 限制选中栏不超过page的最后一个colum显示的位置
 		 * 		栏高固定为16pixels
@@ -348,7 +378,7 @@ void Page::restorePageIndex(bool restore) {
 
 	} else {		//否则强制定向index到第一个栏
 		ptrPage->_itrColums = ptrPage->_listColums.begin();
-		(*(uint8_t*)(indexColums.val) = 0);
+		(*(indexColums.val) = 0);
 	}
 }
 
@@ -364,3 +394,25 @@ void Page::restorePageIndex(bool restore) {
 /**
  * array对象和数组存储在相同的内存区域（栈）中，vector对象存储在自由存储区（堆）
  */
+
+#if 0
+利用 strlen 和 sizeof 求取字符串长度注意事项
+
+strlen 是函数，sizeof 是运算操作符，二者得到的结果类型为 size_t，即 unsigned int 类型。
+大部分编译程序在编译的时候就把 sizeof 计算过了，而 strlen 的结果要在运行的时候才能计算出来。
+
+对于以下语句：
+
+char *str1 = "asdfgh";
+char str2[] = "asdfgh";
+char str3[8] = {'a', 's', 'd'};
+char str4[] = "as\0df";
+执行结果是：
+
+sizeof(str1) = 4;  strlen(str1) = 6;
+sizeof(str2) = 7;  strlen(str2) = 6;
+sizeof(str3) = 8;  strlen(str3) = 3;
+sizeof(str4) = 6;  strlen(str4) = 2;
+
+注意中文字体一个是4
+#endif

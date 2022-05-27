@@ -49,9 +49,9 @@
 #define mymin(a,b) ((a) < (b) ? (a) : (b))
 
 
-#define MENU_DELAY 50	//ms 菜单刷新时间
+#define MENU_DELAY 0	//ms 菜单刷新时间,RTOS下才需要例如50ms
 
-#define NON_CATTOON 1
+
 #ifdef __cplusplus
 #include <algorithm>
 #include <cstring>
@@ -66,11 +66,12 @@ public:
 	virtual ~Page() {}
 	static void flashPage();
 	static void columValAdjust(const Colum *ptrColum);
-	static void drawColum(const Colum *ptrColum, int8_t y, uint8_t selected); //绘制一个colum，elected 可能为 0，1，2。 其中2为颜色叠加模式
+	static void drawColum(const Colum *ptrColum, int8_t y, uint8_t selected, bool valAdjusting = false); //绘制一个colum
+																				//selected 可能为 0，1，0代表不选择，1代表选中
+																				//valAdjusting由columValAdjust传入true，用于显示一些字符盖过值的情况
 	static void restorePageIndex(bool restore);
 	static void drawNumber(uint8_t x, uint8_t y, uint16_t number, uint8_t places);
 	static bool stateTimeOut();
-//	static bool stateTimeOut2();
 	static const Colum* getColumsSelected() { return *ptrPage->_itrColums; }
 	static int num_of_itrColum() { return *ptrPage->_itrColums - *ptrPage->_listColums.begin(); }  //求当前_itrColums是当前_listColums的第几个元素，0表示第一个, 测试OK
 	static void drawIcon() {;} 					//绘制icons，未使用
@@ -87,16 +88,15 @@ public:
 	static uint8_t valIndex;				//用于临时储存当前Page的indexColums的val值
 
 	std::list<const Colum*> _listColums;	//唯一的非static public成员变量，用于在构造Page时，生成构造函数传入的std::vector<Colum> *columVec参数的链表
-	void drawColums();						//唯一的非静态成员函数，批量绘制能当前Page对象能显示在oled屏幕可见范围内的colums
+	void drawColums(bool forceDislayColumVal = false);						//唯一的非静态成员函数，批量绘制能当前Page对象能显示在oled屏幕可见范围内的colums
 private:
 	uint8_t _indexColumsVal; 				//用于Page私有保存static AutoValue indexColums的val值，作用:到上级或下级菜单执行Page::resetPageIndex()时，记忆最后一次选中的colum位置，而更改AutoValue indexColums的val
 	std::list<const Colum*>::iterator _itrColums;
 	Page *_nextPage;
 	Page *_prevPage;
 	uint8_t _numColums;	//记录Colums个数，用于动态修改indexColums的upper以防止越界绘制colums
-						//比如page的_listColums只有2个成员，而实际oled一页可以绘制3个，那么在flash::Page的switch里迭代index变量(的最大值受到indexColums的upper限制)，会绘制第三个不存在的colum导致越界访问
-
-	//	const uint8_t *_Icon;
+						//比如page的_listColums只有2个成员，而实际oled一页可以绘制3个，那么在flash::Page的switch里迭代index变量
+						//(的最大值受到indexColums的upper限制)，会绘制第三个不存在的colum导致越界访问
 };
 
 extern Page pageHomePage;
