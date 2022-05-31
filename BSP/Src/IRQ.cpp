@@ -10,7 +10,10 @@
 
 #include <stdio.h>	//提供 __unused 宏
 
-
+bool intFromRTC;	//RTC中断标记
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin){
+	intFromRTC = true;
+}
 /*
  * 非阻塞模式（中断和DMA）中使用的I2C IRQHandler和回调（对__weak重写）
  * I2C IRQHandler and Callbacks used in non blocking modes (Interrupt and DMA)

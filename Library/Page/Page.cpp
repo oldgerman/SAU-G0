@@ -40,11 +40,22 @@ void Page::flashPage() {
 	//主逻辑
 	for (;;) {
 		valIndex = *(indexColums.val);
+
 		buttons = getButtonState();
 
+		//按键长按的延迟步幅
+		bool markLoogPressed = true;
+		if(buttons == BUTTON_A_LONG || buttons == BUTTON_B_LONG) {
+			if(iterateWaitTimeLongPressed())
+				markLoogPressed = false;
+			else
+				markLoogPressed = true;
+		}
+
 		switch (buttons) {
-		case BUTTON_A_SHORT:
-		case BUTTON_A_LONG:																//若向后迭代Colum
+		case BUTTON_A_LONG:
+			if(markLoogPressed) break;
+		case BUTTON_A_SHORT:														//若向后迭代Colum
 			if (*(ptrPage->_itrColums) == ptrPage->_listColums.back()) {				//且此时_itrColums迭代器指向_listColums的最后元素
 				ptrPage->_itrColums = ptrPage->_listColums.begin();						//将_itrColums迭代器指向_listColums的第一个元素
 				for(uint8_t cntICO = 0; cntICO < cntIndexColumsOffsset; cntICO++) {
@@ -55,8 +66,9 @@ void Page::flashPage() {
 				indexColums++;
 			}
 			break;
-		case BUTTON_B_SHORT:
-		case BUTTON_B_LONG:																//若向前迭代Colum
+		case BUTTON_B_LONG:
+			if(markLoogPressed) break;
+		case BUTTON_B_SHORT:															//若向前迭代Colum
 			if (ptrPage->_itrColums == ptrPage->_listColums.begin()) {					//且此时_itrColums迭代器指向_listColums的第一个元素
 #if 1	//暂时不能等价交换上下，不知道为啥
 				ptrPage->_itrColums = ptrPage->_listColums.end();						//将_itrColums迭代器指向_listColums最后的元素的下一个地址
@@ -93,9 +105,9 @@ void Page::flashPage() {
 				const Colum *ptrColum = ptrPage->getColumsSelected();
 				//若Colum没有AutoValue对象，是纯函数指针的Colum，例如版本信息Colum
 				if (ptrColum->funPtr != nullptr && ptrColum->ptrAutoValue == nullptr)
-						ptrColum->funPtr();	//跳去执行函数指针的函数
+					ptrColum->funPtr();	//跳去执行函数指针的函数
 				else
-				//否则，Colum有AutoValue对象，执行colums的改值函数
+					//否则，Colum有AutoValue对象，执行colums的改值函数
 					columValAdjust(*ptrPage->_itrColums);
 			}
 			break;
@@ -141,7 +153,7 @@ void Page::flashPage() {
 			{
 				lastExit = lastExitCnt;
 //				在此处(退出homePage时)才保存值
-//				saveSettings();
+				saveSettings();
 //				restoreSettings();
 				break;
 			}
@@ -149,6 +161,18 @@ void Page::flashPage() {
 		resetWatchdog();
 	}
 }
+
+
+void changeSettingsBitByMask(settingsBitsType * ptrBits, uint8_t mask){
+	uint8_t b = ptrBits->ctrl;	//先备份一个
+	(b & mask)?			//若b对应mask为1的位为1
+		(b = b & ~mask)		//不改变b对应mask为0位的值，将mask为1的值改为0
+	:					//b对应mask为1的位为0
+		(b = b | mask);		//不改变b对应mask为0位的值，将mask为0的值改为1
+//参考			    b = (data != 0) ? (b | mask) : (b & ~mask);
+    ptrBits->ctrl = b;	//保存b到结构体
+}
+
 
 void Page::columValAdjust(const Colum *ptrColum) {
 	AutoValue *ptrAutoValue = ptrColum->ptrAutoValue;
@@ -164,20 +188,43 @@ void Page::columValAdjust(const Colum *ptrColum) {
 		for (;;) {
 			//u8g2.clearBuffer();	//保留上级for循环刷新的buffer，本节只刷新值
 			buttons = getButtonState();
+
+			//按键长按的延迟步幅
+			bool markLoogPressed = true;
+			if(buttons == BUTTON_A_LONG || buttons == BUTTON_B_LONG) {
+				if(iterateWaitTimeLongPressed())
+					markLoogPressed = false;
+				else
+					markLoogPressed = true;
+			}
+
+
 			if (buttons)
 				lastChange = HAL_GetTick();
 			AutoValue::buttonState = buttons;
 
 			switch (buttons) {
 			case BUTTON_A_LONG:
+				if(markLoogPressed) break;
 			case BUTTON_A_SHORT:
-				(*ptrAutoValue)--;	//AutoValue::operator--()在内部判断buttons长按短按
+				if(ptrColum->ptrBits != nullptr){
+					changeSettingsBitByMask(ptrColum->ptrBits, ptrColum->mask);
+				}
+				else {
+					(*ptrAutoValue)--; //AutoValue::operator--()在内部判断buttons长按短按
+				}
 				if (ptrColum->funLoc == LOC_CHANGE)
 					ptrColum->funPtr();
 				break;
 			case BUTTON_B_LONG:
+				if(markLoogPressed) break;
 			case BUTTON_B_SHORT:
-				(*ptrAutoValue)++;
+				if(ptrColum->ptrBits != nullptr){
+					changeSettingsBitByMask(ptrColum->ptrBits, ptrColum->mask);
+				}
+				else {
+					(*ptrAutoValue)++;
+				}
 				if (ptrColum->funLoc == LOC_CHANGE)
 					ptrColum->funPtr();
 				break;
@@ -196,12 +243,6 @@ void Page::columValAdjust(const Colum *ptrColum) {
 					|| (buttons == BUTTON_OK_SHORT)) {
 				if (ptrColum->funLoc == LOC_EXTI)
 					ptrColum->funPtr();
-//				不在此处保存值, 最后退出homePage时才保存
-//				if (ptrColum->ptrAutoValue != nullptr) {
-//					saveSettings();
-//					resetSettings();
-//					restoreSettings();
-//				}
 				return;
 			}
 
@@ -209,6 +250,7 @@ void Page::columValAdjust(const Colum *ptrColum) {
 		}
 	}
 }
+
 
 void Page::drawColums(bool forceDislayColumVal) {
 	//绘制被选中的colum
@@ -260,8 +302,6 @@ void Page::drawColum(const Colum *ptrColum, int8_t y, uint8_t selected, bool val
 	//绘制栏名称字符,宋体UTF-8
 #define DRAW_COLUM_Y_OFFSET 13U
 	y += DRAW_COLUM_Y_OFFSET;	//偏移字符串y坐标
-	int8_t y1 = y, y2 = y, y3 = y;
-
 
 	if (ptrColum->str != nullptr) {
 		u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese);	//12x12 pixels
@@ -270,31 +310,35 @@ void Page::drawColum(const Colum *ptrColum, int8_t y, uint8_t selected, bool val
 	}
 
 	//若Colum对象存在待修改的值
-	if (ptrColum->ptrAutoValue != nullptr) {
+	if (ptrColum->ptrAutoValue != nullptr ||
+			ptrColum->ptrBits != nullptr) {
 
 		//Colum的str对象长度是否与val和unit部分有显示重叠,中文字符宽度为13像素，有重叠则仅在改值情况下绘制遮罩矩形，否则不绘制val和unit
 		if((!valAdjusting && ((strlen(ptrColum->str) / 3)*13 < (OLED_WIDTH - 49))) || valAdjusting){
-
+			//绘制遮罩矩形
 			u8g2.setDrawColor(selected);
 			u8g2.drawBox(OLED_WIDTH - 49, y - DRAW_COLUM_Y_OFFSET, 64, 16);
 			u8g2.setDrawColor(!selected);
 
-
-
 			//绘制栏详情字符
-			if (!(*ptrColum->ptrAutoValue).valueIsBool() ||
-					(ptrColum->ptrColumVal2Str != nullptr)) 	//针对只有0和1两个值map string的情况
+			if ((!(*ptrColum->ptrAutoValue).valueIsBool()  && ptrColum->ptrBits == nullptr)
+#if AUTOVALUE_MAP_TO_STRING
+					|| (ptrColum->ptrColumVal2Str != nullptr) 	//针对只有0和1两个值map string的情况
+#endif
+					)
 			{
+#if AUTOVALUE_MAP_TO_STRING
 				//如果数字值存在到中文字符映射
 				if(ptrColum->ptrColumVal2Str != nullptr)
 				{
 					std::map<uint16_t, const char*>::iterator itr =
 							ptrColum->ptrColumVal2Str->find(*(ptrColum->ptrAutoValue)->val);
 					u8g2.drawUTF8( OLED_WIDTH -  strlen(itr->second) / 3 /*"中" = 3 "中文" = 6 "中文字" = 9;=*/
-							* 12/*12=字体宽度*/ -3 /*边缘偏移*/, y1, itr->second);
+							* 12/*12=字体宽度*/ -3 /*边缘偏移*/, y, itr->second);
 				}
 				//否则绘制数字值
 				else
+#endif
 				{
 					// 修改字体为非中文字体
 					u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
@@ -304,12 +348,12 @@ void Page::drawColum(const Colum *ptrColum, int8_t y, uint8_t selected, bool val
 					if(ptrColum->ptrAutoValue->places > 2) {	//根据ptrAutoValue的Places，即位数，判断是多少byte的类型，对1byte类型若强制转2byte，传入drawNumber内部会程序会崩溃
 						is2Byte = true;
 					}
-					Page::drawNumber((OLED_WIDTH - 15) - (ptrColum->ptrAutoValue->places) * 6, y2,
+					Page::drawNumber((OLED_WIDTH - 15) - (ptrColum->ptrAutoValue->places) * 6, y,
 							is2Byte?(*(ptrColum->ptrAutoValue)->val):(*(ptrColum->ptrAutoValue)->val),
 						(ptrColum->ptrAutoValue)->places);
 
 					if (ptrColum->unit != nullptr) {
-						u8g2.drawStr((OLED_WIDTH - 10), y2, ptrColum->unit);	//	绘制单位
+						u8g2.drawStr((OLED_WIDTH - 10), y, ptrColum->unit);	//	绘制单位
 					}
 				}
 			}
@@ -319,9 +363,16 @@ void Page::drawColum(const Colum *ptrColum, int8_t y, uint8_t selected, bool val
 			{
 				u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
 				u8g2.setFontRefHeightText();
-				(*(ptrColum->ptrAutoValue)->val == true) ?
-						u8g2.drawStr(OLED_WIDTH - 17, y3, "ON") :
-						u8g2.drawStr(OLED_WIDTH - 25, y3, "OFF");
+				bool val;
+				if(ptrColum->ptrBits != nullptr){
+					val = ptrColum->ptrBits->ctrl & ptrColum->mask;	//第一种为1bit(位域)形式
+				}
+				else{
+					val = *(ptrColum->ptrAutoValue)->val;			//第二种为AutoValue形式
+				}
+				val ?
+						u8g2.drawStr(OLED_WIDTH - 17, y, "ON") :
+						u8g2.drawStr(OLED_WIDTH - 25, y, "OFF");
 			}
 		}
 	}
@@ -357,7 +408,15 @@ bool Page::stateTimeOut() {
 	return false;
 }
 
-
+bool Page::iterateWaitTimeLongPressed() {
+	uint32_t previousState = HAL_GetTick();
+	static uint32_t previousStateChange = HAL_GetTick();
+	if ((previousState - previousStateChange) > 250) {	//250决定按键长按的延迟步幅
+		previousStateChange = previousState;
+		return true;
+	}
+	return false;
+}
 // 恢复索引变量值
 void Page::restorePageIndex(bool restore) {
 	if (restore) {	//如果恢复栏index变量
@@ -395,24 +454,24 @@ void Page::restorePageIndex(bool restore) {
  * array对象和数组存储在相同的内存区域（栈）中，vector对象存储在自由存储区（堆）
  */
 
-#if 0
-利用 strlen 和 sizeof 求取字符串长度注意事项
+/*
+	利用 strlen 和 sizeof 求取字符串长度注意事项
 
-strlen 是函数，sizeof 是运算操作符，二者得到的结果类型为 size_t，即 unsigned int 类型。
-大部分编译程序在编译的时候就把 sizeof 计算过了，而 strlen 的结果要在运行的时候才能计算出来。
+	strlen 是函数，sizeof 是运算操作符，二者得到的结果类型为 size_t，即 unsigned int 类型。
+	大部分编译程序在编译的时候就把 sizeof 计算过了，而 strlen 的结果要在运行的时候才能计算出来。
 
-对于以下语句：
+	对于以下语句：
 
-char *str1 = "asdfgh";
-char str2[] = "asdfgh";
-char str3[8] = {'a', 's', 'd'};
-char str4[] = "as\0df";
-执行结果是：
+	char *str1 = "asdfgh";
+	char str2[] = "asdfgh";
+	char str3[8] = {'a', 's', 'd'};
+	char str4[] = "as\0df";
+	执行结果是：
 
-sizeof(str1) = 4;  strlen(str1) = 6;
-sizeof(str2) = 7;  strlen(str2) = 6;
-sizeof(str3) = 8;  strlen(str3) = 3;
-sizeof(str4) = 6;  strlen(str4) = 2;
+	sizeof(str1) = 4;  strlen(str1) = 6;
+	sizeof(str2) = 7;  strlen(str2) = 6;
+	sizeof(str3) = 8;  strlen(str3) = 3;
+	sizeof(str4) = 6;  strlen(str4) = 2;
 
-注意中文字体一个是4
-#endif
+	注意中文字体一个是4
+*/

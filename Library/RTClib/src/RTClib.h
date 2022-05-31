@@ -17,7 +17,13 @@
   please support Adafruit and open-source hardware by purchasing
   products from Adafruit!
 
-  @Modify OldGerman 2022/05/19
+  @Modify OldGerman
+  	  2022/05/19
+  	  	  匹配STM32 HAL库，可以进行RTC时间设置，但使用掩码更改寄存器指定位的函数存在地址错位
+  	  2022/05/31
+  	  	  RTC的地址指针主动自增的特性会导致I2C_Wrapper的bit和bits读写函数产生地址移位的Bug，
+  	  	  因为这几个函数最终都会调用HAL_I2C_MemWrite和HAL_I2C_MemRead，于是在父类RTC_I2C内
+  	  	  重写了read_bit、read_bits、write_bit、write_bits...最终都会调用用Tramsmit和Recieve
 */
 /**************************************************************************/
 
@@ -25,11 +31,10 @@
 #define _RTCLIB_H_
 
 #include "stdio.h" 		//提供sprintf()
-#include "Arduino.h"	//经裁剪以适配STM32的arduinoAPI，提供某些东西
+#include "Arduino.h"	//来源于FAST_SHIFT适配STM32的arduinoAPI，但经过我裁剪和修改，提供某些东西
 #include "RTC_defines.h"
 #include "stdint.h"
 #include "I2C_Wrapper.h"
-#include "string.h"	  //提供memset()
 #ifdef __cplusplus
 class TimeSpan;
 extern "C" {
@@ -290,24 +295,72 @@ protected:
 */
 /**************************************************************************/
 class RTC_I2C {
+public:
+	RTC_I2C(uint8_t I2C_ADD):i2cAddr(I2C_ADD){}
+	uint8_t i2cAddr;	//RTC I2C 7bit地址左移一位
+	bool ret = 0;			//临时存放I2C API的读写返回状态
 protected:
-  /*!
+	/*!
       @brief  Convert a binary coded decimal value to binary. RTC stores
     time/date values as BCD.
       @param val BCD value
       @return Binary value
-  */
-  static uint8_t bcd2bin(uint8_t val) { return val - 6 * (val >> 4); }
-  /*!
+	 */
+	static uint8_t bcd2bin(uint8_t val) { return val - 6 * (val >> 4); }
+	/*!
       @brief  Convert a binary value to BCD format for the RTC registers
       @param val Binary value
       @return BCD value
-  */
-  static uint8_t bin2bcd(uint8_t val) { return val + 6 * (val / 10); }
-//  Adafruit_I2CDevice *i2c_dev = NULL; ///< Pointer to I2C bus interface
-  FRToSI2C * pFRToSI2C = nullptr;	//C++11后NULL被直接宏定义成了nullptr，C++11前没有nullptr
-//  uint8_t read_register(uint8_t reg);
-//  void write_register(uint8_t reg, uint8_t val);
+	 */
+	static uint8_t bin2bcd(uint8_t val) { return val + 6 * (val / 10); }
+	//  Adafruit_I2CDevice *i2c_dev = NULL; ///< Pointer to I2C bus interface
+	//  I2C_HandleTypeDef 	*hi2c = nullptr;
+	FRToSI2C * pFRToSI2C = nullptr;
+	void read_byte(uint8_t regAddr, uint8_t *ptrData){
+		ret = pFRToSI2C->Master_Transmit(i2cAddr, &regAddr, 1);
+		ret &= pFRToSI2C->Master_Receive(i2cAddr, ptrData, 1);
+	}
+	void write_byte(uint8_t regAddr, uint8_t data){	//注意参数不能为指针，因为要传宏
+		uint8_t bytes[2] = { regAddr, data };
+		ret = pFRToSI2C->Master_Transmit(i2cAddr, bytes, 2);
+	}
+	void write_bit(uint8_t regAddr, uint8_t mask, uint8_t data) {//注意参数不能为指针，因为要传宏
+	    uint8_t b;
+		read_byte(regAddr, &b);
+	    b = (data != 0) ? (b | mask) : (b & ~mask);
+	    write_byte(regAddr, b);
+	}
+	void read_bit(uint8_t regAddr, uint8_t mask, uint8_t *pData) {
+	    uint8_t b;
+	    read_byte(regAddr, &b);
+	    *pData = b & mask;
+	}
+	void read_bits(uint8_t regAddr, uint8_t mask, uint8_t *pData) {
+		uint8_t b;
+		read_byte(regAddr, &b);
+		b &= mask;
+		*pData = b;
+	}
+	void write_bits(uint8_t regAddr, uint8_t mask, uint8_t data) {
+	    uint8_t b;
+	    read_byte(regAddr, &b);
+		data &= mask; // zero all non-important bits in data
+		b &= ~(mask); // zero all important bits in existing byte
+		b |= data; // combine data with existing byte
+		write_byte(regAddr, b);
+	}
+	void master_transmit(uint8_t *pData, uint16_t length) {
+		ret = pFRToSI2C->Master_Transmit(i2cAddr, pData, length);
+	}
+	void master_receive(uint8_t *pData, uint16_t length) {
+		ret = pFRToSI2C->Master_Receive(i2cAddr, pData, length);
+	}
+	void transmit_receive(uint8_t *pData_tx, uint16_t Size_tx,
+						  uint8_t *pData_rx, uint16_t Size_rx)
+	{
+		master_transmit(pData_tx, Size_tx);
+		master_receive(pData_rx, Size_rx);
+	}
 };
 
 /**************************************************************************/
@@ -317,17 +370,20 @@ protected:
 /**************************************************************************/
 class RTC_PCF212x : RTC_I2C {
 public:
+	RTC_PCF212x(uint8_t I2C_ADDR = PCF212x_ADDRESS)
+	:RTC_I2C(I2C_ADDR){}
+
   bool begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127 = false);
-  void adjust(const DateTime &dt);
+  bool adjust(const DateTime &dt);
   bool lostPower(void);
   bool sourceClockRun(void);
   DateTime now();
   Pcf212xSqwPinMode readSqwPinMode();
-  void writeSqwPinMode(Pcf212xSqwPinMode mode);
-  bool setAlarm(const DateTime &dt, Pcf212xAlarmMode alarm_mode);
-  void disableAlarm(uint8_t alarm_num);
-  void clearAlarm(uint8_t alarm_num);
-  bool alarmFired(uint8_t alarm_num);	//Alarm是否被解除
+  bool writeSqwPinMode(Pcf212xSqwPinMode mode);
+  bool setTimeAlarm(const DateTime *dt, Pcf212xAlarmMode alarm_mode);
+  bool setIntAlarm(bool enable);
+  bool clearFlagAlarm();//清除Alarm中断（中断回调函数里设置标记后在主循环里使用）
+  bool alarmFired();	//Alarm是否产生警报（以轮询检测中断）
   void enable32K(void);
   void disable32K(void);
   bool isEnabled32K(void);
@@ -422,6 +478,7 @@ protected:
 
 
 #if 0
+//待匹配驱动
 /**************************************************************************/
 /*!
     @brief  RTC based on the DS1307 chip connected via I2C and the Wire library

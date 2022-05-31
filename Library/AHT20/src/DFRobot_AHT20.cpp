@@ -130,10 +130,15 @@ DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_check_status() {
 }
 
 DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_wait_process(){
-	//等待传感器自己测量的时间80ms
-	//HAL_Delay(CMD_MEASUREMENT_TIME);
-	HAL_Delay(CMD_MEASUREMENT_TIME);
-	return MEASReadData;
+//	等待传感器自己测量的时间80ms
+//	HAL_Delay(CMD_MEASUREMENT_TIME);
+	static uint32_t oldtime = HAL_GetTick();
+	if(HAL_GetTick() - oldtime > CMD_MEASUREMENT_TIME) {
+		oldtime = HAL_GetTick();
+		return MEASReadData;
+	}
+	else
+		return MEASWaitProcess;
 }
 
 DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_read_data(uint8_t* pData, uStatusBit_t *status){
@@ -290,65 +295,3 @@ bool DFRobot_AHT20::readData(uint8_t cmd, void *pBuf, size_t size) {
 	uint8_t *_pBuf = (uint8_t*) pBuf;
 	return _pFRToSI2C->readBytes(_addr << 1, cmd, size, _pBuf);
 }
-
-#if 0
-
-//这是一个典型的长任务
-bool DFRobot_AHT20::startMeasurementReady() {
-	uint8_t recvLen = CMD_MEASUREMENT_DATA_LEN;
-	uint8_t pData[recvLen] = {0};
-	uint32_t temp = 0;
-	uStatusBit_t status;
-
-	//如果状态是已自动校准并且 准备测量了
-	if (!ready()) {
-		DBG_AHT("Not cailibration.\r\n");
-		return false;
-	}
-
-	//发送测量命令
-	writeCommand(CMD_MEASUREMENT, CMD_MEASUREMENT_PARAMS_1ST,
-	CMD_MEASUREMENT_PARAMS_2ND);
-	//getStatusData();
-
-	//阻塞！等待测量的时间80ms，靠！
-	//到底是HAL还是HAL_Delay，要不要将这个长任务打断？？
-//	HAL_Delay(CMD_MEASUREMENT_TIME);
-	HAL_Delay(CMD_MEASUREMENT_TIME);
-
-	//获取连续多个的测量数据寄存器值
-	_pFRToSI2C->Master_Receive(_addr << 1, pData, recvLen);
-	for (int i = 0; i < recvLen; i++) {
-		DBG_AHT("pData = 0x%02X\r\n",pData[i]);
-	}
-
-	//获得值后，还是要检查值的状态寄存器的值是不是busy
-	status.status = pData[0];
-	if (status.busy) {
-		DBG_AHT("AHT20 is busy!\r\n");
-		return false;
-	}
-
-	//进行CRC校验
-	if (AHT20_CRC_EN && !checkCRC8(pData[6], &pData[0], CMD_MEASUREMENT_DATA_LEN - 1)) {
-		DBG_AHT("CRC check failed.\r\n");
-		return false;
-	}
-
-	//计算温度
-	temp = pData[1];
-	temp <<= 8;
-	temp |= pData[2];
-	temp <<= 4;
-	temp = temp | (pData[3] >> 4);
-	_humidity = (uint32_t) (temp * 100) / (uint32_t) 0x100000;
-
-	temp = pData[3] & 0x0F;
-	temp <<= 8;
-	temp |= pData[4];
-	temp <<= 8;
-	temp |= pData[5];
-	_temperature = (uint32_t) (temp * 2000) / (uint32_t) 0x100000 - 500;
-	return true;
-}
-#endif

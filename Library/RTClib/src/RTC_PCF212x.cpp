@@ -30,7 +30,7 @@
 #define PCF212x_REG_OFFSET	  1	/// 偏移寄存器地址
 								///	对于所有最终会使用HAL_I2C_Mem_Read()的FRToSI2C API传入参数的寄存器地址减去它
 
-#define PCF212x_ADDRESS 0x51 << 1   ///< I2C address for PCF212x
+//#define PCF212x_ADDRESS 0x51 << 1   ///< I2C address for PCF212x
 #define PCF212x_TIME 0x03      		///< Time register     03h to 09h
 #define PCF212x_ALARM 0x0A     		///< Alarm  register:  0Ah to 0Eh
 #define PCF212x_CONTROL 0x00   		///< Control register: 00h to 02h
@@ -141,7 +141,7 @@ bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
 	pFRToSI2C = ptrFRToSI2C;
 	is_pcf2127 = isPCF2127;
 
-	uint8_t ret = 0;
+	ret = 0;
 	uint8_t val;		//存储1byte寄存器值
 
 	ret = pFRToSI2C->probe(PCF212x_ADDRESS);
@@ -167,7 +167,7 @@ bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
 	 * The "Power-On Reset Override" facility prevents the RTC to do a reset
 	 * after power on. For normal operation the PORO must be disabled.
 	 */
-	ret = pFRToSI2C->writeBits(PCF212x_ADDRESS, PCF212x_REG_CTRL1,
+	write_bits(PCF212x_REG_CTRL1,
 			PCF212x_BIT_CTRL1_POR_OVRD, RESET);
 	if (ret == 0)
 		return ret;
@@ -175,17 +175,17 @@ bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
 	 * 设置PCF212x_REG_CLKOUT寄存器的OTPR位
 	 */
 	//读取 0Fh地址的CLKOUT_ctl寄存器值存到val变量
-	ret = pFRToSI2C->readByte(PCF212x_ADDRESS, PCF212x_REG_CLKOUT - PCF212x_REG_OFFSET, &val);
-	if (ret < 0)
+	read_byte(PCF212x_REG_CLKOUT, &val);
+	if (ret == 0)
 		return ret;
 	//如果val = 0000,0000, 那么val & PCF212x_BIT_CLKOUT_OTPR 运算就会判定OTPR位是0（对应手册8.3.2清除OTPR位操作）
 	//那么表示没有进行OTP刷新，接着调用regmap_set_bits()设置OTPR位为1，执行OTP刷新
 	//(注意OTPR寄存器表RESET VALUE标的是X，表明上电未定义，如果val & PCF212x_BIT_CLKOUT_OTPR是1就不用执行if语句内刷新OTPR的操作了)，
 	if (!(val & PCF212x_BIT_CLKOUT_OTPR))
 	{
-		ret = pFRToSI2C->writeBits(PCF212x_ADDRESS, PCF212x_REG_CLKOUT,
+		write_bits(PCF212x_REG_CLKOUT,
 				PCF212x_BIT_CLKOUT_OTPR, SET);
-		if (ret < 0)
+		if (ret == 0)
 			return ret;
 
 		HAL_Delay(100);	//进行手册8.3.2描述的等待100ms，
@@ -205,7 +205,7 @@ bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
 	 * 而对于 PCF212x  bit[7:6] 都用于 Symbol WD_CD
 	 */
 #if 1
-	ret = pFRToSI2C->writeBits(PCF212x_ADDRESS, PCF212x_REG_WD_CTL,	//	配置为 0110,0010
+	write_bits(PCF212x_REG_WD_CTL,	//	配置为 0110,0010
 				//mask（掩码）：以下按位与后得:    1100,0011
 				 PCF212x_BIT_WD_CTL_CD1 |		// 1000,0000
 				 PCF212x_BIT_WD_CTL_CD0 |		// 0100,0000
@@ -229,7 +229,7 @@ bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
 	 * Note: This is the default chip behaviour but added to ensure
 	 * correct tamper timestamp and interrupt function.
 	 */
-	ret = pFRToSI2C->writeBits(PCF212x_ADDRESS, PCF212x_REG_CTRL3,//	配置为 0000,0000
+	write_bits(PCF212x_REG_CTRL3,//	配置为 0000,0000
 				// 0001,0011
 				 PCF212x_BIT_CTRL3_BTSE |		// 0001,0000
 				 PCF212x_BIT_CTRL3_BIE |		// 0000,0010
@@ -242,12 +242,12 @@ bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
 	}
 
 	/*
-	 * 关闭时间戳功能。不储存第一次触发的时间戳
+	 * 修改：关闭时间戳功能。不储存第一次触发的时间戳
 	 * 启用 时间戳功能 并存储第一次触发的时间戳，直到 TSF1 和 TSF2 中断标志​​被清除。
 	 * Enable timestamp function and store timestamp of first trigger
 	 * event until TSF1 and TSF2 interrupt flags are cleared.
 	 */
-	ret = pFRToSI2C->writeBits(PCF212x_ADDRESS, PCF212x_REG_TS_CTRL, //	配置为 1000,0000
+	write_bits(PCF212x_REG_TS_CTRL, //	配置为 1000,0000
 				 //1100,0000
 				 PCF212x_BIT_TS_CTRL_TSOFF |	//0100,0000
 				 PCF212x_BIT_TS_CTRL_TSM,		//1000,0000
@@ -260,14 +260,14 @@ bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
 	}
 
 	/*
-	 * 关闭时间戳中断
+	 * 修改：关闭时间戳中断
 	 * 在设置 TSF1 或 TSF2 时间戳标志时启用中断生成。
 	 * 中断信号是开漏输出，如果不使用可以悬空。
 	 * Enable interrupt generation when TSF1 or TSF2 timestamp flags
 	 * are set. Interrupt signal is an open-drain output and can be
 	 * left floating if unused.
 	 */
-	ret = pFRToSI2C->writeBits(PCF212x_ADDRESS, PCF212x_REG_CTRL2 - PCF212x_REG_OFFSET,//	配置为  0000,0100
+	write_bits(PCF212x_REG_CTRL2,//	配置为  0000,0100
 				 // 0000,0100
 				 PCF212x_BIT_CTRL2_TSIE,
 				 // 0000,0100
@@ -289,7 +289,7 @@ bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
 /**************************************************************************/
 bool RTC_PCF212x::sourceClockRun(void) {
   uint8_t mode;
-  pFRToSI2C->readBit(PCF212x_ADDRESS, PCF212x_REG_CTRL1 - PCF212x_REG_OFFSET, PCF212x_REG_CTRL1_STOP, &mode);
+  read_bit(PCF212x_REG_CTRL1, PCF212x_REG_CTRL1_STOP, &mode);
   return !mode;
 }
 
@@ -314,7 +314,7 @@ bool RTC_PCF212x::sourceClockRun(void) {
 /**************************************************************************/
 bool RTC_PCF212x::lostPower(void) {
 	uint8_t data;
-	pFRToSI2C->readBit(PCF212x_ADDRESS, PCF212x_REG_SC - PCF212x_REG_OFFSET, PCF212x_BIT_SC_OSF, &data);
+	read_bit(PCF212x_REG_SC, PCF212x_BIT_SC_OSF, &data);
   return data;
 }
 
@@ -329,7 +329,7 @@ bool RTC_PCF212x::lostPower(void) {
     @param dt DateTime object containing the date/time to set
 */
 /**************************************************************************/
-void RTC_PCF212x::adjust(const DateTime &dt) {
+bool RTC_PCF212x::adjust(const DateTime &dt) {
 #if 0
 	// 方法1 测试OK
 	  uint8_t buffer[7] = {
@@ -358,12 +358,13 @@ void RTC_PCF212x::adjust(const DateTime &dt) {
 		  bin2bcd(dt.month()),
 		  bin2bcd((dt.year() - 2000U))
   };
-  pFRToSI2C->Master_Transmit(PCF212x_ADDRESS, buffer, 8);
+  master_transmit(buffer, 8);
 #endif
 //  //设置时钟完整性标志为0
 //  pFRToSI2C->writeBit(PCF212x_ADDRESS, PCF212x_TIME,
 //		PCF212x_BIT_SC_OSF,	//bit[7] 1000,0000 掩码
 //		RESET);					//       0000,0000 掩码位写0
+  return ret;
 }
 
 /**************************************************************************/
@@ -376,7 +377,7 @@ void RTC_PCF212x::adjust(const DateTime &dt) {
 DateTime RTC_PCF212x::now() {
   uint8_t buffer[7] = {0};
   buffer[0] = PCF212x_TIME;
-  pFRToSI2C->TransmitReceive(PCF212x_ADDRESS, buffer, 1, buffer, 7);
+  transmit_receive(buffer, 1, buffer, 7);
   return DateTime(
 		  bcd2bin(buffer[6]) + 2000U,//年
 		  bcd2bin(buffer[5]),		//月
@@ -395,8 +396,8 @@ DateTime RTC_PCF212x::now() {
 /**************************************************************************/
 Pcf212xSqwPinMode RTC_PCF212x::readSqwPinMode() {
   uint8_t mode;
-  pFRToSI2C->readBits(PCF212x_ADDRESS,
-		  PCF212x_REG_CLKOUT - PCF212x_REG_OFFSET,
+  read_bits(
+		  PCF212x_REG_CLKOUT,
 		  PCF212x_REG_CLKOUT_COF0 | PCF212x_REG_CLKOUT_COF1 | PCF212x_REG_CLKOUT_COF2,
 		   &mode);
 
@@ -410,109 +411,81 @@ Pcf212xSqwPinMode RTC_PCF212x::readSqwPinMode() {
     @param mode Desired mode, see Pcf212xSqwPinMode enum
 */
 /**************************************************************************/
-void RTC_PCF212x::writeSqwPinMode(Pcf212xSqwPinMode mode) {
-	  pFRToSI2C->writeBits(PCF212x_ADDRESS, PCF212x_REG_CLKOUT - PCF212x_REG_OFFSET, mode, mode);
+bool RTC_PCF212x::writeSqwPinMode(Pcf212xSqwPinMode mode) {
+	  write_bits(PCF212x_REG_CLKOUT, mode, mode);
+	  return ret;
 }
 
-//
-///**************************************************************************/
-///*!
-//    @brief  Set alarm for PCF212x
-//        @param 	dt DateTime object
-//        @param 	alarm_mode Desired mode, see Pcf212xAlarmMode enum
-//    @return False if control register is not set, otherwise true
-//*/
-///**************************************************************************/
-//bool RTC_PCF212x::setAlarm(const DateTime &dt, Pcf212xAlarmMode alarm_mode) {
-//  uint8_t ctrl = read_register(PCF212x_CONTROL);
-//  if (!(ctrl & 0x04)) {
-//    return false;
-//  }
-//
-//  uint8_t A1M1 = (alarm_mode & 0x01) << 7; // Seconds bit 7.
-//  uint8_t A1M2 = (alarm_mode & 0x02) << 6; // Minutes bit 7.
-//  uint8_t A1M3 = (alarm_mode & 0x04) << 5; // Hour bit 7.
-//  uint8_t A1M4 = (alarm_mode & 0x08) << 4; // Day/Date bit 7.
-//  uint8_t DY_DT = (alarm_mode & 0x10)
-//                  << 2; // Day/Date bit 6. Date when 0, day of week when 1.
-//  uint8_t day = (DY_DT) ? dowToPCF212x(dt.dayOfTheWeek()) : dt.day();
-//
-//  uint8_t buffer[5] = {PCF212x_ALARM1, uint8_t(bin2bcd(dt.second()) | A1M1),
-//                       uint8_t(bin2bcd(dt.minute()) | A1M2),
-//                       uint8_t(bin2bcd(dt.hour()) | A1M3),
-//                       uint8_t(bin2bcd(day) | A1M4 | DY_DT)};
-//  i2c_dev->write(buffer, 5);
-//
-//  write_register(PCF212x_CONTROL, ctrl | 0x01); // AI1E
-//
-//  return true;
-//}
-//
-///**************************************************************************/
-///*!
-//    @brief  Disable alarm
-//        @param 	alarm_num Alarm number to disable
-//*/
-///**************************************************************************/
-//void RTC_PCF212x::disableAlarm(uint8_t alarm_num) {
-//  uint8_t ctrl = read_register(PCF212x_CONTROL);
-//  ctrl &= ~(1 << (alarm_num - 1));
-//  write_register(PCF212x_CONTROL, ctrl);
-//}
-//
-///**************************************************************************/
-///*!
-//    @brief  Clear status of alarm
-//        @param 	alarm_num Alarm number to clear
-//*/
-///**************************************************************************/
-//void RTC_PCF212x::clearAlarm(uint8_t alarm_num) {
-//  uint8_t status = read_register(PCF212x_STATUSREG);
-//  status &= ~(0x1 << (alarm_num - 1));
-//  write_register(PCF212x_STATUSREG, status);
-//}
-//
-///**************************************************************************/
-///*!
-//    @brief  Get status of alarm
-//        @param 	alarm_num Alarm number to check status of
-//        @return True if alarm has been fired otherwise false
-//*/
-///**************************************************************************/
-//bool RTC_PCF212x::alarmFired(uint8_t alarm_num) {
-//  return (read_register(PCF212x_STATUSREG) >> (alarm_num - 1)) & 0x1;
-//}
-//
-///**************************************************************************/
-///*!
-//    @brief  Enable 32KHz Output
-//    @details The 32kHz output is enabled by default. It requires an external
-//    pull-up resistor to function correctly
-//*/
-///**************************************************************************/
-//void RTC_PCF212x::enable32K(void) {
-//  uint8_t status = read_register(PCF212x_STATUSREG);
-//  status |= (0x1 << 0x03);
-//  write_register(PCF212x_STATUSREG, status);
-//}
-//
-///**************************************************************************/
-///*!
-//    @brief  Disable 32KHz Output
-//*/
-///**************************************************************************/
-//void RTC_PCF212x::disable32K(void) {
-//  uint8_t status = read_register(PCF212x_STATUSREG);
-//  status &= ~(0x1 << 0x03);
-//  write_register(PCF212x_STATUSREG, status);
-//}
-//
-///**************************************************************************/
-///*!
-//    @brief  Get status of 32KHz Output
-//    @return True if enabled otherwise false
-//*/
-///**************************************************************************/
-//bool RTC_PCF212x::isEnabled32K(void) {
-//  return (read_register(PCF212x_STATUSREG) >> 0x03) & 0x01;
-//}
+
+
+
+
+
+/**************************************************************************/
+/*!
+    @brief  Set alarm 1 for DS3231
+        @param 	dt DateTime object
+        @param 	alarm_mode Desired mode, see Ds3231Alarm1Mode enum
+    @return False if control register is not set, otherwise true
+*/
+/**************************************************************************/
+bool RTC_PCF212x::setTimeAlarm(const DateTime *dt, Pcf212xAlarmMode alarm_mode) {
+/*
+	PCF212x_A1_Second = 0x1E,    // 0001,1110 < 报警：当匹配设定的秒
+	PCF212x_A1_Minute = 0x1C,    // 0001,1100 < 报警：当匹配设定的秒、分
+	PCF212x_A1_Hour = 0x18,      // 0001,1000 < 报警：当匹配设定的秒、分、时
+	PCF212x_A1_Date = 0x10,      // 0001,0000 < 报警：当匹配设定的秒、分、时、日期
+	PCF212x_A1_Day = 0x08,       // 0000,1000 < 报警：当匹配设定的秒、分、时、星期
+ */
+  //将枚举配置的8bit位映射到每一个时间单位寄存器的MSB，即使能位，若不使能，那么闹钟匹配条件会忽略这个时间单位
+  uint8_t SA = (alarm_mode & 0x01) << 7; // Seconds bit 7.	// 0000,0001 // 秒寄存器 	bit[7] 匹配枚举 bit[0]
+  uint8_t MA = (alarm_mode & 0x02) << 6; // Minutes bit 7.	// 0000,0010 // 分寄存器 	bit[7] 匹配枚举 bit[1]
+  uint8_t HA = (alarm_mode & 0x04) << 5; // Hour bit 7.		// 0000,0100 // 时寄存器 	bit[7] 匹配枚举 bit[2]
+  uint8_t DA = (alarm_mode & 0x08) << 4; // Day bit 7.		// 0000,1000 // 日期寄存器 	bit[7] 匹配枚举 bit[3]
+  uint8_t WA = (alarm_mode & 0x10) << 3; // Date bit 7. 	// 0001,0000 // 星期寄存器 	bit[6] 匹配枚举 bit[4]
+
+  uint8_t buffer[6] = { PCF212x_REG_ALARM_SC,							//Alarm1寄存器组起始地址
+		  	  	  	    uint8_t(bin2bcd(dt->second()) | SA),	//转换BCD编码值，并按位与标志位
+                        uint8_t(bin2bcd(dt->minute()) | MA),
+                        uint8_t(bin2bcd(dt->hour()) | HA),
+						uint8_t(bin2bcd(dt->day()) | DA),
+                        uint8_t(bin2bcd(dt->dayOfTheWeek())| WA)};
+  master_transmit(buffer, 6);
+  return ret;
+}
+
+//闹钟中断使能或关闭
+bool RTC_PCF212x::setIntAlarm(bool enable)
+{
+	write_bit(PCF212x_REG_CTRL2, PCF212x_BIT_CTRL2_AIE,
+				enable ? PCF212x_BIT_CTRL2_AIE : RESET);
+	return ret;
+}
+
+
+/*
+ * 清除Alarm Flag (AF)
+ * PCF212x_BIT_CTRL2_AF
+ * 0: no alarm interrupt generated
+ * 2: flag set when alarm triggered; (flag must be cleared to clear interrupt)
+ */
+bool RTC_PCF212x::clearFlagAlarm() {
+	write_bit(PCF212x_REG_CTRL2,//	配置为 0000,0000
+			PCF212x_BIT_CTRL2_AF, RESET);
+	return ret;
+}
+
+/**************************************************************************/
+/*!
+    @brief  Get status of alarm
+        @param 	alarm_num Alarm number to check status of
+        @return True if alarm has been fired otherwise false
+*/
+/**************************************************************************/
+bool RTC_PCF212x::alarmFired() {
+	  uint8_t mode;
+	  read_bit(PCF212x_REG_CTRL2, PCF212x_BIT_CTRL2_AF, &mode);
+	  return mode;
+}
+
+

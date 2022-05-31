@@ -70,7 +70,7 @@ void colum_FuncNull() {
 }
 
 void columsScreenSettings_Brightness() {
-//	screenBrightness.upper = systemSettings.ScreenBrightness;
+//	screenBrightness.upper = systemSto.data.ScreenBrightness;
 //	*screenBrightness.val = screenBrightness.upper;
 //	setContrast(*screenBrightness.val);
 }
@@ -81,7 +81,6 @@ void columsAccessibility_ResetSettings() {
 	/* .... */
 	bool ok = colums_StrChooseOneFromTwo(true);
 	if (ok) {
-		//shutScreen();
 		resetSettings();
 		saveSettings();
 	}

@@ -21,11 +21,11 @@ extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 
 /* 默认设置值 */
 //固件版本
-#define FW_VERSION 100U	//BIN
+#define FW_VERSION 100U
 //数据采集
 	//待补充
 //日期时间：%Y-%m-%d %H:%M:%S  yyyy-mm-dd hh:mm:ss  2018-02-21 12:00:00
-#define DATE_TIME_yy	0U	//22年 需要+2000，注意特别将yyyy写为yy以区分
+#define DATE_TIME_yy	22U	//22年 需要+2000，注意特别将yyyy写为yy以区分
 #define DATE_TIME_MM	1U	//1月
 #define DATE_TIME_dd	1U	//1日
 #define DATE_TIME_hh	0U	//0时
@@ -39,43 +39,28 @@ extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 #define SLEEP_EN		1U		//true 开启休眠
 #define SLEEP_TIME		60U		//60S 后进入休眠
 
-/*
- * 用于储存不经常修改的Uni-Sensor设置信息，存在STM32片内Flash，
- * 需要在Colum修改的变量必须为uint16_t类型
- * 此结构必须是2bytes(16bit)的倍数(例如uint16_t int16_t float)，因为它是以uint16_t块的形式在flash里保存/加载
- * This struct must be a multiple of 2 bytes as it is saved / restored from
- * flash in uint16_t chunks
- */
-typedef struct {
+#define sysBits 0
+#define colBits 1
+struct settings_Bits{
+	uint8_t bit0 	:1;
+	uint8_t bit1 	:1;
+	uint8_t bit2 	:1;
+	uint8_t bit3 	:1;
+	uint8_t bit4 	:1;
+	uint8_t bit5 	:1;
+	uint8_t bit6 	:1;
+	uint8_t bit7 	:1;
+};
+
+typedef union{
+	settings_Bits bits;
+	uint8_t ctrl;		//Colum对象成员prBits和mask修改bits时使用
+}settingsBitsType;
+
+struct orgData{
 	//版本信息
 	uint16_t FWversion;
 	//数据采集
-		//没有需要存储在Flash里的数据;
-	//日期时间
-	uint16_t yy;	//0~99
-	uint16_t MM;
-	uint16_t dd;
-	uint16_t hh;
-	uint16_t mm;
-	uint16_t ss;
-	//显示设置
-	uint16_t ScreenBrightness;	// 0~100% 屏幕亮度
-	uint16_t PowerOnShowLogo;	// bool	  开机logo
-	//熄屏唤醒
-	uint16_t Sensitivity;     	// 0~100% 动作阈值
-	uint16_t SleepEn;			// bool 启用休眠
-	uint16_t SleepTime;     	// 0~999S 亮屏时间
-	//辅助功能
-		//没有需要存储在Flash里的数据;
-} systemSettingsType;
-
-/*
- * 用于储存频繁擦写的数据采集信息，存在片外 EEPROM，
- * 需要在Colum修改的变量必须为uint16_t类型
- * 此结构必须是1bytes(16bit)的类型，若单个类型大于1byte需要使用union进行特殊转换操作
- */
-typedef struct {
-	//大于1byte，需要union处理：
 	uint32_t TimeRUN;				// 累计运行时间--RUN
 	uint32_t TimeLPW_RUN;			// 累计运行时间--LPW_RUN
 	uint32_t TImeSTOP1;				// 累计运行时间--STOP1
@@ -94,21 +79,35 @@ typedef struct {
 	uint16_t Tss;
 	//每个周期采集样本数（给滤波器的处理为一组数据，不会存未经滤波的多个数据组）
 	uint16_t TSamples;						//暂时不支持单独设置某一对象的样本数
-	//采集对象
-	uint16_t BinCodeOfEnCollect;				//B00000000; 使用1byte位数组充当8个bool类型
-											// 76543210
-											// bit[0]: （LSB）RTC时间完整性标志位
-											// bit[1]: 温湿度计--温度
-											// bit[2]: 温湿度计--湿度
-											// bit[3]: 大气压计--气压（例如BME280或MS5611）
-											// bit[4]: 环境光传感器--光照度
-											// bit[5]: 电池电压（等价于采集电量百分比）
-											// bit[6]: 本次采集周期的运行时间--LPW_RUN
-											// bit[7]: （MSB）使能采集任务, 默认不使能
-} eepromSettingsType;
+	//这个其实当全局变量好了，不需要存在eeprom
+	//日期时间
+	uint16_t yy;	//0~99
+	uint16_t MM;
+	uint16_t dd;
+	uint16_t hh;
+	uint16_t mm;
+	uint16_t ss;
+	//显示设置
+	uint16_t ScreenBrightness;	// 0~100% 屏幕亮度
+	//熄屏唤醒
+	uint16_t Sensitivity;     	// 0~100% 动作阈值
+	uint16_t SleepTime;     	// 0~999S 亮屏时间
+	//开关标志
+	settingsBitsType settingsBits[2];
+};
 
-extern systemSettingsType systemSettings;
-extern eepromSettingsType eepromSettings;
+/*
+ * systemStorageType
+ * 用于片外 EEPROM 储存设置信息和数据采集信息
+ */
+typedef union {
+	struct orgData data;			//运行时使用
+	uint8_t ctrl[sizeof(orgData)];	//向eeprom读写时使用
+} systemStorageType;
+
+
+extern systemStorageType systemSto;
+
 void saveSettings();
 bool restoreSettings();
 uint8_t lookupVoltageLevel();
@@ -117,6 +116,8 @@ void calibrationReset();
 void resetSettings();
 #endif
 #ifdef __cplusplus
+#include "ee24.hpp"
+extern EE24 ee24;
 }
 #endif
 

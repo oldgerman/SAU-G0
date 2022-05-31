@@ -6,6 +6,7 @@
  */
 
 #include "cppports.h"
+#include "IRQ.h"
 #include "MillisTaskManager.h"
 /******************* C标准库 *******************/
 #include "stdio.h"   //提供vsnprintf()
@@ -39,13 +40,13 @@ AxisData axData;
 AxisAvg axAvg;
 /******************* RTC *******************/
 //由于SWD和串口不同时使用，故Debug只能模拟串口接收到了数据
-#define DBG_COM_DATE_TIME_ADJ 0					////< Change 0 to 1 to open debug
 
 RTC_PCF212x rtc;
 DateTime now;	//now变量即作为打印时间的变量，也作为串口修改的时间字符串存储的变量
 bool nowCOMChanged;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
+#define DBG_COM_DATE_TIME_ADJ 0					////< Change 0 to 1 to open debug
 #if DBG_COM_DATE_TIME_ADJ
 char testSaveBuffer[17] = {
 		'2', '2', '/', 						    //2022年
@@ -67,63 +68,81 @@ volatile uint8_t rxBusy = 0;
 volatile uint8_t rxCounter = 0;
 volatile uint32_t rxTick = 0;
 
-int mi(unsigned char dat, unsigned char mi) {
-	unsigned char i;
-	int sum = 1;
-
-	for (i = 0; i < mi; i++)
-		sum = sum * dat;
-
-	return sum;
-}
 /******************* 按键状态全局变量 *******************/
 extern ButtonState buttons;
 /******************* 获取Page *******************/
 #include "Page.hpp"
-/****************************************************
-*函数:strtoint(char *str,int result)
-*输入:unsigned 字符串
-*输出：整型数字
-比如：收到“12345”  赋值给变量就是12345
-https://blog.csdn.net/u013457167/article/details/45459887
-*****************************************************/
-//int strtoint(unsigned char* str, int result)
-// {
-//	int i, tmp = 0;         //i,tmp临时变量
-//	int length = strlen((char*) str);         //strlen参数为const char*,故强制转换
-//	i = 0;
-//	if (str[0] == '-')  //	可以输入-12345，负号也给你转成有符号整数
-//		i = 1;
-//	for (; i < length; i++) {
-//		tmp = str[i] & 0x0f;         //如果原数组中存放的是ascii码，直接将其转换为数字
-//		result += tmp * mi(10, length - i - 1); //1*100+2*10+3*1
-//	}
-//	if (str[0] == '-')
-//		return -result;
-//	return result;
-//}
-
 /******************* 任务调度器 *******************/
 static MillisTaskManager mtmMain;
 
+
+#include "ee24.hpp"
 void setup(){
 	powerOnDectet(swPressedTimePowerOn);
-	resetSettings();	//恢复设置（暂时用重置设置代替）
+#if 1
+//主线逻辑
+	ee24.autoInit(false);
+	restoreSettings(); //恢复设置
 	setupGUI();
 	setupCOM();
 	setupRTC();
 	setupAHT20();
 	setupMOV();
 
-    /*任务注册*/
-    mtmMain.Register(loopGUI, 50);                	//50ms：屏幕刷新
-    mtmMain.Register(loopRTC, 300);                 //300ms：RTC监控
-    mtmMain.Register(loopMIX, 100);   			 	//100ms：杂七杂八的传感器监控
-    mtmMain.Register(loopCOM, 500);            		//500ms：COM收发监控
+
+    /*任务注册*/									//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
+    mtmMain.Register(loopGUI, 25);                	//25ms：屏幕刷新
+    mtmMain.Register(loopRTC, 100);                 //100ms：RTC监控
+    mtmMain.Register(loopMIX, 200);   			 	//200ms：杂七杂八的传感器监控
+    mtmMain.Register(loopCOM, 1000);            	//1000ms：COM收发监控
+    loop();	//暂时丢到这里方便其他单元测试
+#elif 0
+//EE24类临时交换I2C引脚测试
+//	ee24_write_test_A();
+	/*
+	 * 测试     deviceSize   pageSize
+	 * 24C02       256 			8		//	#define  _EEPROM_SIZE_KBIT   2
+	 * 24C128	  16384		    64		//	#define  _EEPROM_SIZE_KBIT   32~1024均可，但小于32不行：，deviceSize固定为0，pageSize固定为8	--这个如何处理，宏定义先要搞一个，是不是得用HAL_Transmit?
+	 */
+	ee24.autoInit(true);
+
+	while(1)
+	{
+		ee24.exchangeI2CPins();
+		uint32_t deviceSize = ee24.determineMemSize();
+		uint16_t pageSize =  ee24.determinePageSize();
+		int i = 0;
+		ee24.recoverI2CPins();
+		deviceSize = ee24.determineMemSize();
+		pageSize =  ee24.determinePageSize();
+		i = 0;
+	}
+#else
+//RTC PCF2129 闹钟中断测试
+	setupRTC();
+	bool mmark;
+	DateTime alarmDateTime(2000, 1, 21, 0, 0, 5);	//每分钟的第5秒一次闹钟
+	mmark = rtc.alarmFired();
+	mmark =  rtc.clearFlagAlarm();
+	mmark = rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_Second);
+//	mmark = rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_PerSecond);
+	mmark = rtc.setIntAlarm(true);
+	while(1) {
+		now = rtc.now();
+		if(intFromRTC){			//由G031的PB5检测PCF2129的中断下降沿回调函数更改
+//		if(rtc.alarmFired()){	//也可以轮询检测
+			mmark = rtc.clearFlagAlarm();
+			mmark = rtc.alarmFired();
+			intFromRTC = false;
+		}
+	}
+#endif
 }
 
 void loop(){
-	mtmMain.Running(HAL_GetTick());
+	while(1) {
+		mtmMain.Running(HAL_GetTick());
+	}
 }
 
 void setupRTC()
@@ -131,7 +150,7 @@ void setupRTC()
 	nowCOMChanged = false;
   if (!rtc.begin(&FRToSI2C1, false))
     DBG_PRINT("Couldn't find RTC");
-
+#if 0
   if (rtc.lostPower()) {
     DBG_PRINT("RTC source clock is running, let's set the time!");
     // When time needs to be set on a new device, or after a power loss, the
@@ -142,6 +161,7 @@ void setupRTC()
     // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
   }
+#endif
 }
 
 
@@ -402,36 +422,47 @@ void setupGUI() {
 }
 
 void loopGUI() {
-//		u8g2.clearBuffer();
-//绘制温湿度信息
-
-	buttons = getButtonState();
-	switch (buttons) {
-	case BUTTON_NONE:
-		break;
-	case BUTTON_A_SHORT:
-		break;
-	case BUTTON_A_LONG:
-		break;
-	case BUTTON_B_SHORT:
-		break;
-	case BUTTON_B_LONG:
-		enterSettingsMenu(); // enter the settings menu
-		u8g2.clearBuffer();
-		u8g2.sendBuffer();
-		break;
-	case BUTTON_BOTH:
-		break;
-	case BUTTON_BOTH_LONG:
-		break;
-	case BUTTON_OK_SHORT:
-		break;
-	case BUTTON_OK_LONG:
-		break;
-	default:
-		break;
+	//一些标记变量用于按键状态锁定，因为主屏进入菜单是长按中键，菜单返回主屏也是长按中键
+	static bool markBackFromMenu = false;
+	static ButtonState oldButtons;
+	if(markBackFromMenu) {
+		if(buttons != oldButtons)
+			markBackFromMenu = false;
 	}
 
+	//检测按键
+	buttons = getButtonState();
+	if(!markBackFromMenu) {
+		switch (buttons) {
+		case BUTTON_NONE:
+			break;
+		case BUTTON_A_SHORT:
+			break;
+		case BUTTON_A_LONG:
+			break;
+		case BUTTON_B_SHORT:
+			break;
+		case BUTTON_B_LONG:
+			break;
+		case BUTTON_BOTH:
+			break;
+		case BUTTON_BOTH_LONG:
+			break;
+		case BUTTON_OK_SHORT:
+			enterSettingsMenu(); // enter the settings menu
+			u8g2.clearBuffer();
+			u8g2.sendBuffer();
+			markBackFromMenu = true;
+			oldButtons = buttons;
+			break;
+		case BUTTON_OK_LONG:
+			break;
+		default:
+			break;
+		}
+	}
+
+	//绘制温湿度信息
 	if (th_MeasurementUpload) {
 		th_MeasurementUpload = false;
 
@@ -491,7 +522,7 @@ void loopGUI() {
 		secondPionthalf1s = HAL_GetTick(); //变相同步了 os系统滴答计时的0.5秒 与 RTC的1秒的 每秒时间
 		secondPrev = now.second();
 
-		u8g2.setFont(u8g2_font_IPAandRUSLCD_tf);	//8pixel字体
+		u8g2.setFont(u8g2_font_IPAandRUSLCD_tr);	//8pixel字体
 		u8g2.setFontRefHeightText();
 		char buffer[4] = { 0 };	//20：43
 		u8g2.setDrawColor(1);//黑底白字
@@ -520,8 +551,6 @@ void loopGUI() {
 
 	//发送oled buffer
 	u8g2.sendBuffer();
-
-
 //	HAL_Delay(50);
 }
 
@@ -724,7 +753,7 @@ void loopUART(uint16_t ms) {
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   txBusy = 0;
 }
-//
+
 /**
  * @brief  Rx Transfer Uploadd callbacks.
  * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
@@ -744,3 +773,35 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     HAL_UART_Receive_IT(&huart2, aRxTemp, 1);
   }
 }
+
+/****************************************************
+*函数:strtoint(char *str,int result)
+*输入:unsigned 字符串
+*输出：整型数字
+比如：收到“12345”  赋值给变量就是12345
+https://blog.csdn.net/u013457167/article/details/45459887
+*****************************************************/
+//int mi(unsigned char dat, unsigned char mi) {
+//	unsigned char i;
+//	int sum = 1;
+//
+//	for (i = 0; i < mi; i++)
+//		sum = sum * dat;
+//
+//	return sum;
+//}
+//int strtoint(unsigned char* str, int result)
+// {
+//	int i, tmp = 0;         //i,tmp临时变量
+//	int length = strlen((char*) str);         //strlen参数为const char*,故强制转换
+//	i = 0;
+//	if (str[0] == '-')  //	可以输入-12345，负号也给你转成有符号整数
+//		i = 1;
+//	for (; i < length; i++) {
+//		tmp = str[i] & 0x0f;         //如果原数组中存放的是ascii码，直接将其转换为数字
+//		result += tmp * mi(10, length - i - 1); //1*100+2*10+3*1
+//	}
+//	if (str[0] == '-')
+//		return -result;
+//	return result;
+//}

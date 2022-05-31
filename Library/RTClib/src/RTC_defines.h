@@ -8,6 +8,7 @@
 #ifndef RTCLIB_SRC_RTC_DEFINES_H_
 #define RTCLIB_SRC_RTC_DEFINES_H_
 
+#define PCF212x_ADDRESS 0x51 << 1   ///< I2C address for PCF212x
 
 //这些enum都是对应设置位段的值
 /** DS1307 SQW pin mode settings */
@@ -161,15 +162,12 @@ enum Pcf212xSqwPinMode {
 
 /** Pcf212x Alarm mode */
 enum Pcf212xAlarmMode {
-  Pcf212x_A_PerSecond = 0x0F, /**< Alarm once per second */
-  Pcf212x_A_Second = 0x0E,    /**< Alarm when seconds match */
-  Pcf212x_A_Minute = 0x0C,    /**< Alarm when minutes and seconds match */
-  Pcf212x_A_Hour = 0x08,      /**< Alarm when hours, minutes
-                                   and seconds match */
-  Pcf212x_A_Date = 0x00,      /**< Alarm when date (day of month), hours,
-                                   minutes and seconds match */
-  Pcf212x_A_Day = 0x10        /**< Alarm when day (day of week), hours,
-                                   minutes and seconds match */
+//	PCF212x_A_PerSecond = 0x1F, // 0001,1111 < 报警：每秒一次 //DS3231的每秒闹钟的枚举在PCF2129中不适用
+	PCF212x_A_Second = 0x1E,    // 0001,1110 < 报警：当匹配设定的秒
+	PCF212x_A_Minute = 0x1C,    // 0001,1100 < 报警：当匹配设定的秒、分
+	PCF212x_A_Hour = 0x18,      // 0001,1000 < 报警：当匹配设定的秒、分、时
+	PCF212x_A_Date = 0x10,      // 0001,0000 < 报警：当匹配设定的秒、分、时、日期
+	PCF212x_A_Day = 0x08,       // 0000,1000 < 报警：当匹配设定的秒、分、时、星期
+//  PCF212x_A1_Date_Day = 0x00,  // 0000,0000 < 报警：当匹配设定的秒、分、时、星期或星期
 };
-
 #endif /* RTCLIB_SRC_RTC_DEFINES_H_ */

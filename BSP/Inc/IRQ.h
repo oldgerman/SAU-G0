@@ -15,6 +15,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin);	//检测片外RTC中断的回调函数
+
+extern bool intFromRTC;
+
 //extern bool ADC_Injected_Callback_Mark;	//ADC HAL_ADCEx_InjectedConvCpltCallback标记
 
 //以下对HAL的__weak回调函数重写

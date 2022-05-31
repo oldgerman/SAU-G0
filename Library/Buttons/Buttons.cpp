@@ -9,7 +9,7 @@
 #include "BSP.h"
 
 
-#define SW_DELAY 50								//ms 按键中delay的时间
+#define SW_DELAY 0								//ms 按键中delay的时间
 
 #if 0
 #define DBG_BUTTONS usb_printf

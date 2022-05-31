@@ -76,6 +76,9 @@ void Error_Handler(void);
 #define DISP_CS_GPIO_Port GPIOA
 #define DISP_DC_Pin GPIO_PIN_4
 #define DISP_DC_GPIO_Port GPIOB
+#define INT_RTC_Pin GPIO_PIN_5
+#define INT_RTC_GPIO_Port GPIOB
+#define INT_RTC_EXTI_IRQn EXTI4_15_IRQn
 #define SDA1_Pin GPIO_PIN_7
 #define SDA1_GPIO_Port GPIOB
 #define SCL1_Pin GPIO_PIN_8
@@ -93,6 +96,7 @@ extern UART_HandleTypeDef huart2;
 
 
 void usb_printf(const char *format, ...);
+void EXT_I2C1_Init();
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

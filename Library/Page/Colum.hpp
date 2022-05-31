@@ -9,9 +9,13 @@
 #define INC_COLUM_HPP_
 #include "stdint.h"
 #include "Buttons.hpp"	//提供ButtonState枚举类型
-
+#include "Settings.h"
 #ifdef __cplusplus
+
+#define AUTOVALUE_MAP_TO_STRING 0	//如果显示待修改的数组值需要映射到字符串, 1: 映射 0: 不映射，可以节省180byte Flash
+#if AUTOVALUE_MAP_TO_STRING
 #include <map>
+#endif
 
 //改值函数Page::columValAdjust()内，当前Colum对象的函数指针执行位置
 enum FunLoc {
@@ -97,7 +101,7 @@ public:
 		}
 	}
 
-	uint16_t *val;				//待修改值，为了兼容1byte和2byte数据类型而使用模板太麻烦了，改为泛型指针好了。。。
+	uint16_t *val;			//待修改值，为了兼容1byte和2byte数据类型而使用模板太麻烦了，改为泛型指针好了。。。
 	uint8_t places;			//值的位数
 	uint16_t upper;			//值的上限
 	uint16_t lower;			//值的下限
@@ -112,60 +116,56 @@ public:
 class Colum {
 public:
 	Colum(const char *Str = nullptr) :
-			str(Str) {
-		ptrAutoValue = nullptr;
-		unit = nullptr;
-		nextPage = nullptr;
-		funPtr = nullptr;
-		ptrColumVal2Str = nullptr;
-	}
+			str(Str) {}
 
-	Colum(const char *Str, uint16_t *Val, uint8_t Places, uint16_t Upper,	//注意val是泛型指针
+	Colum(const char *Str, uint16_t *Val, uint8_t Places, uint16_t Upper,
 			uint16_t Lower, uint8_t ShortSteps, uint8_t LongSteps = 0,
 			const char *Uint = nullptr, void (*FunPtr)(void) = nullptr,
-			FunLoc FunLoc = LOC_NONE,
-			std::map<uint16_t, const char*> *PtrColumVal2Str = nullptr) :
-			str(Str), unit(Uint), funPtr(FunPtr), funLoc(FunLoc), ptrColumVal2Str(
-					PtrColumVal2Str) {
-		ptrAutoValue = new AutoValue(Val, Places, Upper, Lower, ShortSteps, LongSteps);
-//		ptrAutoValue = nullptr;
-		nextPage = nullptr;
-	}
+			FunLoc FunLoc = LOC_NONE
+#if AUTOVALUE_MAP_TO_STRING
+			,std::map<uint16_t, const char*> *PtrColumVal2Str = nullptr
+#endif
+			):str(Str), unit(Uint), funPtr(FunPtr), funLoc(FunLoc)
+#if AUTOVALUE_MAP_TO_STRING
+			,ptrColumVal2Str(PtrColumVal2Str)
+#endif
+	{ ptrAutoValue = new AutoValue(Val, Places, Upper, Lower, ShortSteps, LongSteps); }
 
 	Colum(const char *Str, AutoValue *PtrAutoValue, const char *Uint = nullptr,
-			void (*FunPtr)(void) = nullptr, FunLoc FunLoc = LOC_NONE,
-			std::map<uint16_t, const char*> *PtrColumVal2Str = nullptr) :
-			str(Str), ptrAutoValue(PtrAutoValue), unit(Uint), funPtr(FunPtr), funLoc(
-					FunLoc), ptrColumVal2Str(PtrColumVal2Str) {
-		nextPage = nullptr;
-	}
+			void (*FunPtr)(void) = nullptr, FunLoc FunLoc = LOC_NONE
+#if AUTOVALUE_MAP_TO_STRING
+			,std::map<uint16_t, const char*> *PtrColumVal2Str = nullptr
+#endif
+			) : str(Str), ptrAutoValue(PtrAutoValue), unit(Uint), funPtr(FunPtr), funLoc(
+					FunLoc)
+#if AUTOVALUE_MAP_TO_STRING
+	, ptrColumVal2Str(PtrColumVal2Str)
+#endif
+	{}
 
 	Colum(const char *Str, void (*FunPtr)(void), FunLoc FunLoc = LOC_NONE) :
-			str(Str), funPtr(FunPtr), funLoc(FunLoc) {
-		ptrAutoValue = nullptr;
-		nextPage = nullptr;
-		ptrColumVal2Str = nullptr;
-	}
+			str(Str), funPtr(FunPtr), funLoc(FunLoc) {}
+
+	Colum(const char *Str, settingsBitsType* Bits, uint8_t Mask)  :
+		str(Str), ptrBits(Bits), mask(Mask){}
 
 	//仅这个函数nextPage ≠ nullptr，该Colum对象进入下一个Page对象，三级及以上菜单使用
 	Colum(const char *Str, Page *NextPage) :
-			str(Str), nextPage(NextPage) {
-		ptrAutoValue = nullptr;
-		unit = nullptr;
-		funPtr = nullptr;
-		ptrColumVal2Str = nullptr;
-	}
-	virtual ~Colum() {
-	}
+			str(Str), nextPage(NextPage) {}
+	virtual ~Colum() {}
 
 	const char *str; //warning：str will be initialized after：确保成员在初始化列表中的出现顺序与在类中出现的顺序相同：
-	AutoValue *ptrAutoValue;
-	const char *unit;
-	Page *nextPage;
-	Page *prevPage;
-	void (*funPtr)(void);	//改值页执行函数
+	AutoValue *ptrAutoValue = nullptr;
+	const char *unit = nullptr;
+	Page *nextPage = nullptr;
+	Page *prevPage = nullptr;
+	void (*funPtr)(void) = nullptr;	//改值页执行函数
 	FunLoc funLoc;
-	std::map<uint16_t, const char*> *ptrColumVal2Str;//若有数值映射需要，则指向传入的map数组解析值到字符串
+#if AUTOVALUE_MAP_TO_STRING
+	std::map<uint16_t, const char*> *ptrColumVal2Str = nullptr;//若有数值映射需要，则指向传入的map数组解析值到字符串
+#endif
+	settingsBitsType * ptrBits = nullptr;
+	uint8_t mask;
 };
 #endif
 #endif /* INC_COLUM_HPP_ */

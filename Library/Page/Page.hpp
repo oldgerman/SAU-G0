@@ -34,6 +34,11 @@
  *      	适配每页大于两个栏的情况
  *      	记忆最后一次切花页时选中栏的位置
  *          适配 显示、循环特性 的特殊情况：每页至多显示n个栏时，当前页显示的栏数为m，m<n，且n-m不一定等于1
+ *      2022/05/28:
+ *      	支持union settingsBitsType内嵌位域结构体的指定位值修改，0和1 显示为ON/OFF
+ *      	Colum类新增支持位域修改的 重载构造函数可以像如下方式在std::vector<Colum> XXX内构造:
+ *      		Colum("自动休眠", &systemSto.data.settingsBits[0], B10000000)
+ *      	该方式节省了new AutoValue的开销和eeprom，代价是Colum新增2个1byte成员：ptrBits和mask
  */
 
 #ifndef INC_PAGE_HPP_
@@ -45,6 +50,7 @@
 #include "Settings.h"
 #include <Buttons.hpp>
 #include "Arduino.h" //提供bit操作宏
+#include "stdio.h"	//提供sprintf
 #define mymax(a,b) ((a) > (b) ? (a) : (b))
 #define mymin(a,b) ((a) < (b) ? (a) : (b))
 
@@ -72,6 +78,7 @@ public:
 	static void restorePageIndex(bool restore);
 	static void drawNumber(uint8_t x, uint8_t y, uint16_t number, uint8_t places);
 	static bool stateTimeOut();
+	static bool iterateWaitTimeLongPressed();
 	static const Colum* getColumsSelected() { return *ptrPage->_itrColums; }
 	static int num_of_itrColum() { return *ptrPage->_itrColums - *ptrPage->_listColums.begin(); }  //求当前_itrColums是当前_listColums的第几个元素，0表示第一个, 测试OK
 	static void drawIcon() {;} 					//绘制icons，未使用

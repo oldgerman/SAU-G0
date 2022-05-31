@@ -118,7 +118,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  loop();
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -409,10 +409,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(DISP_DC_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : INT_RTC_Pin */
+  GPIO_InitStruct.Pin = INT_RTC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(INT_RTC_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
-
+void EXT_I2C1_Init(){
+	MX_I2C1_Init();
+}
 /* USER CODE END 4 */
 
 /**

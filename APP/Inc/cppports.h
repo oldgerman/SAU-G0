@@ -82,6 +82,8 @@ void loopPowerOffDetect(uint16_t msShutDown);
 
 /* 私有定义 Private defines --------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
+
+
 #ifndef DBG_PRINT
 #if 0  //< Change 0 to 1 to open debug macro and check program debug information
 #define DBG_PRINT usb_printf
