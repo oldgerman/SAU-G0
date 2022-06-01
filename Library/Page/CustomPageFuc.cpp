@@ -2,10 +2,10 @@
  * CustomPageFuc.cpp
  *
  *  Created on: May 25, 2022
- *      Author: OldGerman
+ *      Author: OldGerman (过气德国佬)
  */
 #include "CustomPage.hpp"
-
+#include "cppports.h"
 
 const char *strChooseOneFromTwo 	= "OK   CXL";	//Cancel的英文简称是CXL
 const char *strfeaturesNotRealized = "暂未实现";
@@ -26,13 +26,176 @@ void columsDateTime_ChangeDateTime(){
 
 
 void columsDataCollected_Schedule(){
-	colum_FeaturesUnrealized();
+	u8g2.clearBuffer();
+	u8g2.sendBuffer();
+	u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese); //12x12 pixels
+	uint8_t y = 13;
+	u8g2.drawUTF8(1, y, "已采");
+	u8g2.drawUTF8(1, y + 16, "待采");
+
+	u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
+//	u8g2.dra
+	uint8_t numXOffset = 10;
+	uint8_t places = 4;			//数据最大位数
+	drawNumber((OLED_WIDTH - numXOffset) - places * 6, y,
+			systemSto.data.NumDataCollected, places);
+	drawNumber((OLED_WIDTH - numXOffset) - places * 6, y + 16,
+			systemSto.data.NumDataWillCollect, places);
+	u8g2.drawUTF8(1, y + 32, strChooseOneFromTwo);
+
+	u8g2.sendBuffer();
+	waitingToChooseOneFromTwo();
+}
+
+void columsDataCollect_ScheduleSetting_NumDataOneDay(){
+	if(Sec24H % systemSto.data.NumDataOneDay != 0) {
+		switch (buttons) {
+		case BUTTON_A_LONG:
+		case BUTTON_A_SHORT:
+			systemSto.data.NumDataOneDay--;
+			break;
+		case BUTTON_B_LONG:
+		case BUTTON_B_SHORT:
+			systemSto.data.NumDataOneDay++;
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+void columsDataCollect_ScheduleSetting_NumDataWillCollect(){
+	//每个采集对象数据占用2byte，因此将剩余EEPROM空间先除以2，
+	//再除以采集对象数量，得到可存储的采集数据组的最大个数，其作为值约束
+	uint32_t maxNumDataSave = getEEPROMFreeSize() / 2 /
+			(
+				systemSto.data.settingsBits[colBits].bits.bit1 +
+				systemSto.data.settingsBits[colBits].bits.bit2 +
+				systemSto.data.settingsBits[colBits].bits.bit3 +
+				systemSto.data.settingsBits[colBits].bits.bit4 +
+				systemSto.data.settingsBits[colBits].bits.bit5 +
+				systemSto.data.settingsBits[colBits].bits.bit6
+			);
+	if(systemSto.data.NumDataWillCollect > maxNumDataSave)
+		systemSto.data.NumDataWillCollect = maxNumDataSave;
+
+	/*
+	 * 使用24C02（256byte）进行测试：
+	 * 当只采集温度和湿度时，对象数量为2，那么192/2/2 = 48
+	 * 串口打印：
+	 * 	maxNumDataSave = 48
+	 */
+#if 0
+	DBG_PAGE_PRINT("maxNumDataSave = %d\r\n",maxNumDataSave);
+#endif
+}
+
+uint32_t getEEPROMFreeSize(){
+#if 0
+	/*
+	 * 使用24C02（256byte）进行测试：
+	 * 串口打印：
+	 * a = 256, b = 64, c = 192
+	 */
+	 uint32_t a = ee24.getMemSizeInByte();
+	 uint32_t b =  sizeof(systemStorageType);
+	 uint32_t c = a - b;
+	 DBG_PAGE_PRINT("a = %d, b = %d, c = %d\r\n",a,b,c);
+	 return c;
+#else
+	 return ee24.getMemSizeInByte() - sizeof(systemStorageType);
+#endif
+}
+
+void columsDrawDateTime(DateTime *dt)
+{
+	uint8_t y = 13;
+	char buf[15] = {0};
+	sprintf(buf, "%02d/%02d/%02d", dt->year()-2000, dt->month(), dt->day());
+
+	u8g2.setDrawColor(1);
+	u8g2.clearBuffer();
+	u8g2.sendBuffer();
+	u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
+
+	u8g2.drawUTF8(1, y, buf);
+	memset(buf, 0, strlen(buf));
+	sprintf(buf, "%02d:%02d:%02d", dt->hour(),dt->minute(), dt->second());
+	y += 16;
+	u8g2.drawUTF8(1, y, buf);
+	y += 16;
+	u8g2.drawUTF8(1, y, strChooseOneFromTwo);
+	u8g2.sendBuffer();
+}
+void columsDataCollect_ScheduleSetting_STDateTime(){
+	DateTime dt(
+			systemSto.data.STyy + 2000,
+			systemSto.data.STMM,
+			systemSto.data.STdd,
+			systemSto.data.SThh,
+			systemSto.data.STmm,
+			systemSto.data.STss);
+	columsDrawDateTime(&dt);
+	waitingToChooseOneFromTwo();
+}
+void columsDataCollect_ScheduleSetting_EDDateTime(){
+	/*
+	 * Debug: 396B/264B(有print和无print)
+	 * 设置的开始日期为2022/06/25 08:12:13
+	 * 每天
+	 * 串口打印:
+	 * 	systemSto.data.SThh = 11
+	 * 	dt1 = 2022/6/25 (Saturday) 11:12:13
+	 * 	dt2 = 2022/6/27 (Saturday) 11:12:13
+	 */
+//	DBG_PAGE_PRINT("systemSto.data.SThh = %d\r\n", systemSto.data.SThh);
+	DateTime dt(
+			systemSto.data.STyy + 2000,
+			systemSto.data.STMM,
+			systemSto.data.STdd,
+			systemSto.data.SThh,
+			systemSto.data.STmm,
+			systemSto.data.STss);
+//	DBG_PAGE_PRINT("dt1 = %d/%d/%d (%s) %d:%d:%d\r\n",
+//			dt.year(),
+//			dt.month(),
+//			dt.day(),
+//			daysOfTheWeek[dt.dayOfTheWeek()],
+//			dt.hour(),
+//			dt.minute(),
+//			dt.second()
+//	);
+
+	TimeSpan timeSpan(
+			(Sec24H / systemSto.data.NumDataOneDay) * 	//得到任务周期，单位：秒
+			systemSto.data.NumDataWillCollect);			//乘以将采集数据组个数，得到总任务时间戳
+	/**
+	 * 笔记：C语言中指针的*号和乘法的*号，怎么区分？
+	 * 不用区分，出现指针*的地方不会出现乘号*，反之亦然
+	 * 指针*是一元操作符，乘法*是二元操作符
+	 */
+	dt = dt + timeSpan;
+
+//	DBG_PAGE_PRINT("dt2 = %d/%d/%d (%s) %d:%d:%d\r\n",
+//			dt.year(),
+//			dt.month(),
+//			dt.day(),
+//			daysOfTheWeek[dt.dayOfTheWeek()],
+//			dt.hour(),
+//			dt.minute(),
+//			dt.second()
+//	);
+	columsDrawDateTime(&dt);
+	waitingToChooseOneFromTwo();
 }
 /**
  * 用于某些colums二选一
  * 默认打印当前选中的colum标题字符串，也可指定字符串
+ * @param featuresRealized	功能是否实现 false:打印strfeaturesNotRealized字符串，true:打印指定的字符串
+ * @param str nullptr: 打印当前Colum的字符串 不是nullptr:打印自定义字符串
+ * @param OK_CXL_OffSetNumColum OK和CXLy方向继续向下偏移colum个数,默认为0
  */
-bool colums_StrChooseOneFromTwo(bool featuresRealized, const char *str) {
+bool colums_StrChooseOneFromTwo(bool featuresRealized, const char *str, uint8_t OK_CXL_OffSetNumColum) {
 	u8g2.setDrawColor(1);
 	u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese); //12x12 pixels
 	u8g2.clearBuffer();
@@ -53,7 +216,7 @@ bool colums_StrChooseOneFromTwo(bool featuresRealized, const char *str) {
 		u8g2.drawUTF8(1, y, strfeaturesNotRealized);
 	}
 	u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
-	y += 16;
+	y += (16 + 16 * OK_CXL_OffSetNumColum);
 	u8g2.drawUTF8(1, y, strChooseOneFromTwo);
 	u8g2.sendBuffer();
 
@@ -204,3 +367,4 @@ void columsHome_ShowVerInfo() {
 		waitingToChooseOneFromTwo();
 	}
 }
+

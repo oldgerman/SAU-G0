@@ -44,8 +44,7 @@ AxisAvg axAvg;
 RTC_PCF212x rtc;
 DateTime now;	//now变量即作为打印时间的变量，也作为串口修改的时间字符串存储的变量
 bool nowCOMChanged;
-char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-
+extern const char daysOfTheWeek[7][12];
 #define DBG_COM_DATE_TIME_ADJ 0					////< Change 0 to 1 to open debug
 #if DBG_COM_DATE_TIME_ADJ
 char testSaveBuffer[17] = {
@@ -88,8 +87,10 @@ void setup(){
 	setupRTC();
 	setupAHT20();
 	setupMOV();
-
-
+//	while(1)
+//	{
+//		loopGUI();
+//	}
     /*任务注册*/									//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
     mtmMain.Register(loopGUI, 25);                	//25ms：屏幕刷新
     mtmMain.Register(loopRTC, 100);                 //100ms：RTC监控

@@ -2,16 +2,20 @@
  * CustomPageObject.cpp
  *
  *  Created on: May 25, 2022
- *      Author: OldGerman
+ *      Author: OldGerman (过气德国佬)
  */
 #include "CustomPage.hpp"
 #include <string.h>
 #include "stdio.h"
 #include "dtostrf.h"
 
+//#pragma GCC push_options
+//#pragma GCC optimize ("Os")	//Os优化无Bug
+
 /******************** 构造二级或三级菜单Colum或Page对象 ********************/
-//数据采集--开始日期
+//数据采集-->开始日期
 std::vector<Colum> columsDataCollectSTDateTime = {
+		Colum("总览", columsDataCollect_ScheduleSetting_STDateTime, LOC_ENTER),
 		Colum("年", &systemSto.data.STyy, 2, 99, 0, 1, 10),
 		Colum("月", &systemSto.data.STMM, 2, 12, 1, 1, 10),
 		Colum("日", &systemSto.data.STdd, 2, 31, 1, 1, 10),
@@ -22,21 +26,25 @@ std::vector<Colum> columsDataCollectSTDateTime = {
 
 Page pageDataCollectSTDateTime(&columsDataCollectSTDateTime);
 
-//数据采集--采集周期
-std::vector<Colum> columsDataCollectT = {
-		Colum("时", &systemSto.data.Thh, 2, 23, 0, 1, 10),
-		Colum("分", &systemSto.data.Tmm, 2, 59, 0, 1, 10),
-		Colum("秒", &systemSto.data.Tss, 2, 59, 0, 1, 10)
+//数据采集-->任务设置-->采集对象
+std::vector<Colum> columsDataCollectObj = {
+		Colum("停止标志", 	&systemSto.data.settingsBits[colBits], B00000001),	// RTC OSF (OSC STOP FLAG)
+		Colum("温度", 		&systemSto.data.settingsBits[colBits], B00000010),
+		Colum("湿度", 		&systemSto.data.settingsBits[colBits], B00000100),
+		Colum("气压", 		&systemSto.data.settingsBits[colBits], B00001000),
+		Colum("照度", 		&systemSto.data.settingsBits[colBits], B00010000),
+		Colum("电池电压", 	&systemSto.data.settingsBits[colBits], B00100000)
 };
+Page pageDataCollectObj(&columsDataCollectObj);
 
-Page pageDataCollectT(&columsDataCollectT);
-
-//数据采集--任务设置
+//数据采集-->任务设置
 std::vector<Colum> columsDataCollect_ScheduleSetting = {
-		Colum("单次样本", &systemSto.data.TSamples, 2, 10, 1, 1, 10),
-		Colum("采集周期", &pageDataCollectT),
-		Colum("开始日期", &pageDataCollectSTDateTime)	//	级联三级菜单
-//		Colum("结束日期", &pageDataCollectxxx)			//	自动计算出
+		Colum("采集对象", &pageDataCollectObj),
+		Colum("样本数", &systemSto.data.NumDataSamples, 2, 99, 1, 1, 10),
+		Colum("每天次数", &systemSto.data.NumDataOneDay, 4, Sec24H / 10, 1, 1, 10, nullptr, columsDataCollect_ScheduleSetting_NumDataOneDay, LOC_CHANGE),						//后台约束对齐到整除点
+		Colum("总次数", &systemSto.data.NumDataWillCollect, 4, 9999, 1, 1, 10, nullptr, columsDataCollect_ScheduleSetting_NumDataWillCollect, LOC_CHANGE),				//实时约束到最大容量
+		Colum("开始日期", &pageDataCollectSTDateTime),
+		Colum("结束日期", columsDataCollect_ScheduleSetting_EDDateTime, LOC_ENTER)			//	自动计算出
 };
 
 Page pageDataCollect_ScheduleSetting(&columsDataCollect_ScheduleSetting);
@@ -45,7 +53,7 @@ Page pageDataCollect_ScheduleSetting(&columsDataCollect_ScheduleSetting);
 std::vector<Colum> columsDataCollect = {
 		Colum("任务设置", &pageDataCollect_ScheduleSetting),
 		Colum("任务进度", columsDataCollected_Schedule),
-		Colum("运行任务", &systemSto.data.settingsBits[sysBits], B00000001),
+		Colum("任务开关", &systemSto.data.settingsBits[colBits], B10000000),
 		Colum("删除任务", colum_FeaturesUnrealized),
 		Colum("清除记录", colum_FeaturesUnrealized)		//ee24_eraseChip();	//不能全部清除，只清空EEPROM的采集数据开始的位到最后的地址
 };
@@ -134,4 +142,4 @@ const uint8_t Page::cntIndexColumsOffsset = (Page::indexColums.upper / Page::ind
 
 uint8_t Page::valIndex = 0;
 //uint8_t Page::bbb = 0;			//按钮状态，debug
-
+//#pragma GCC pop_options

@@ -2,7 +2,7 @@
  * Colum.hpp
  *
  *  Created on: 2021年4月20日
- *      Author: OldGerman
+ *      Author: OldGerman (过气德国佬)
  */
 
 #ifndef INC_COLUM_HPP_
@@ -160,7 +160,7 @@ public:
 	Page *nextPage = nullptr;
 	Page *prevPage = nullptr;
 	void (*funPtr)(void) = nullptr;	//改值页执行函数
-	FunLoc funLoc;
+	FunLoc funLoc = LOC_NONE;			//注意操控bit的Colum构造函数没有初始化funLoc，导致ColumAdjust函数内运行到	if (ptrColum->funLoc == LOC_ENTER) {ptrColum->funPtr();里面使程序
 #if AUTOVALUE_MAP_TO_STRING
 	std::map<uint16_t, const char*> *ptrColumVal2Str = nullptr;//若有数值映射需要，则指向传入的map数组解析值到字符串
 #endif

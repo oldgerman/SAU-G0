@@ -6,6 +6,8 @@
  */
 
 #include "Page.hpp"
+//#pragma GCC push_options
+//#pragma GCC optimize ("O0")	//Os优化无Bug
 
 #define resetWatchdog(...)
 
@@ -163,6 +165,7 @@ void Page::flashPage() {
 }
 
 
+
 void changeSettingsBitByMask(settingsBitsType * ptrBits, uint8_t mask){
 	uint8_t b = ptrBits->ctrl;	//先备份一个
 	(b & mask)?			//若b对应mask为1的位为1
@@ -172,6 +175,7 @@ void changeSettingsBitByMask(settingsBitsType * ptrBits, uint8_t mask){
 //参考			    b = (data != 0) ? (b | mask) : (b & ~mask);
     ptrBits->ctrl = b;	//保存b到结构体
 }
+
 
 
 void Page::columValAdjust(const Colum *ptrColum) {
@@ -348,13 +352,25 @@ void Page::drawColum(const Colum *ptrColum, int8_t y, uint8_t selected, bool val
 					if(ptrColum->ptrAutoValue->places > 2) {	//根据ptrAutoValue的Places，即位数，判断是多少byte的类型，对1byte类型若强制转2byte，传入drawNumber内部会程序会崩溃
 						is2Byte = true;
 					}
-					Page::drawNumber((OLED_WIDTH - 15) - (ptrColum->ptrAutoValue->places) * 6, y,
+#if 0
+					drawNumber((OLED_WIDTH - 15) - (ptrColum->ptrAutoValue->places) * 6, y,
 							is2Byte?(*(ptrColum->ptrAutoValue)->val):(*(ptrColum->ptrAutoValue)->val),
 						(ptrColum->ptrAutoValue)->places);
 
 					if (ptrColum->unit != nullptr) {
 						u8g2.drawStr((OLED_WIDTH - 10), y, ptrColum->unit);	//	绘制单位
 					}
+#else
+					uint8_t numXOffset = 15;
+					if (ptrColum->unit != nullptr) {
+						u8g2.drawStr((OLED_WIDTH - 10), y, ptrColum->unit);	//	绘制单位
+					}
+					else
+						numXOffset = 10;	//若没有单位，最多可绘制四位数number
+					drawNumber((OLED_WIDTH - numXOffset) - (ptrColum->ptrAutoValue->places) * 6, y,
+							is2Byte?(*(ptrColum->ptrAutoValue)->val):(*(ptrColum->ptrAutoValue)->val),
+						(ptrColum->ptrAutoValue)->places);
+#endif
 				}
 			}
 
@@ -379,7 +395,7 @@ void Page::drawColum(const Colum *ptrColum, int8_t y, uint8_t selected, bool val
 }
 
 
-void Page::drawNumber(uint8_t x, uint8_t y, uint16_t number,
+void drawNumber(uint8_t x, uint8_t y, uint16_t number,
 		uint8_t places) {
 	char buffer[7] = { 0 };
 	//sprintf(buffer, "%06d" , number);
@@ -397,7 +413,6 @@ void Page::drawNumber(uint8_t x, uint8_t y, uint16_t number,
 	u8g2.drawStr(x, y, buffer + cntFirstNum - (places - cntNum));
 	//u8g2.drawUTF8(x, y, buffer + cntFirstNum - (places - cntNum));
 }
-
 bool Page::stateTimeOut() {
 	uint32_t previousState = HAL_GetTick();
 	static uint32_t previousStateChange = HAL_GetTick();
@@ -440,7 +455,7 @@ void Page::restorePageIndex(bool restore) {
 		(*(indexColums.val) = 0);
 	}
 }
-
+//#pragma GCC pop_options
 // 临时健忘笔记
 /**
  * C++对象数组构造函数
@@ -456,22 +471,17 @@ void Page::restorePageIndex(bool restore) {
 
 /*
 	利用 strlen 和 sizeof 求取字符串长度注意事项
-
 	strlen 是函数，sizeof 是运算操作符，二者得到的结果类型为 size_t，即 unsigned int 类型。
 	大部分编译程序在编译的时候就把 sizeof 计算过了，而 strlen 的结果要在运行的时候才能计算出来。
-
 	对于以下语句：
-
 	char *str1 = "asdfgh";
 	char str2[] = "asdfgh";
 	char str3[8] = {'a', 's', 'd'};
 	char str4[] = "as\0df";
 	执行结果是：
-
 	sizeof(str1) = 4;  strlen(str1) = 6;
 	sizeof(str2) = 7;  strlen(str2) = 6;
 	sizeof(str3) = 8;  strlen(str3) = 3;
 	sizeof(str4) = 6;  strlen(str4) = 2;
-
 	注意中文字体一个是4
 */

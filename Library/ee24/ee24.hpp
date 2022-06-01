@@ -144,6 +144,7 @@ public:
 	uint16_t determinePageSize();
 	uint16_t getPageSizeInByte() { return _sizePageByte; }
 	uint16_t getMemSizeInKbit()  { return _sizeMemKbit; }
+	uint16_t getMemSizeInByte()  { return _sizeMemKbit * 128; }
 private:
 	void 				exc_I2C_Init();
 	void 				exc_I2C_DeInit();

@@ -2,7 +2,7 @@
  * Page.hpp
  *
  *  Created on: 2021年4月20日
- *      Author: OldGerman
+ *      Author: OldGerman (过气德国佬)
  *      2021/04/20:
  *			用于ODGIRON的实现多级菜单，暂时只支持每页显示两个栏
  *			数据结构简述：
@@ -51,9 +51,19 @@
 #include <Buttons.hpp>
 #include "Arduino.h" //提供bit操作宏
 #include "stdio.h"	//提供sprintf
+
+#ifndef DBG_PAGE
+#define DBG_PAGE 1	//< Change 0 to 1 to open debug macro and check program debug information
+#if DBG_PAGE
+#define DBG_PAGE_PRINT usb_printf
+#else
+#define DBG_PAGE_PRINT(...)
+#endif
+#endif
+
+
 #define mymax(a,b) ((a) > (b) ? (a) : (b))
 #define mymin(a,b) ((a) < (b) ? (a) : (b))
-
 
 #define MENU_DELAY 0	//ms 菜单刷新时间,RTOS下才需要例如50ms
 
@@ -63,7 +73,7 @@
 #include <cstring>
 void cartoonFreshColums(bool Dir, uint8_t Steps = 4);
 void drawLogoAndVersion(char firmwareMark);
-
+void drawNumber(uint8_t x, uint8_t y, uint16_t number,uint8_t places);
 
 class Page {
 public:
@@ -76,7 +86,6 @@ public:
 																				//selected 可能为 0，1，0代表不选择，1代表选中
 																				//valAdjusting由columValAdjust传入true，用于显示一些字符盖过值的情况
 	static void restorePageIndex(bool restore);
-	static void drawNumber(uint8_t x, uint8_t y, uint16_t number, uint8_t places);
 	static bool stateTimeOut();
 	static bool iterateWaitTimeLongPressed();
 	static const Colum* getColumsSelected() { return *ptrPage->_itrColums; }

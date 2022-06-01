@@ -32,7 +32,7 @@ void usb_printf(const char *format, ...);
 
 /* 导出常量 Exported constants -----------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+const char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 /* USER CODE END EC */
 
 /* 导出的宏 Exported macro ---------------------------------------------------*/

@@ -20,17 +20,21 @@ extern "C" {
 extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 
 /* 默认设置值 */
+#define Sec24H		86400		//一天的秒数
 //固件版本
-#define FW_VERSION 100U
+#define FW_VERSION_yy 2022U		// 2022
+#define FW_VERSION_mm 6U		// 06
+#define FW_VERSION_dd 1U		// 01
+#define FW_VERSION_vv 10U		// 10 版本号v1.0
 //数据采集
 	//待补充
 //日期时间：%Y-%m-%d %H:%M:%S  yyyy-mm-dd hh:mm:ss  2018-02-21 12:00:00
-#define DATE_TIME_yy	22U	//22年 需要+2000，注意特别将yyyy写为yy以区分
-#define DATE_TIME_MM	1U	//1月
-#define DATE_TIME_dd	1U	//1日
-#define DATE_TIME_hh	0U	//0时
-#define DATE_TIME_mm	0U	//0分
-#define DATE_TIME_ss	0U	//0秒
+#define DATE_TIME_yy	2022U	//22年 需要+2000，注意特别将yyyy写为yy以区分
+#define DATE_TIME_MM	1U		//1月
+#define DATE_TIME_dd	1U		//1日
+#define DATE_TIME_hh	0U		//0时
+#define DATE_TIME_mm	0U		//0分
+#define DATE_TIME_ss	0U		//0秒
 //显示设置
 #define SCREEN_BRIGHTNESS 50U	//50% 亮度
 #define PW_ON_SHOW_LOGO 1U		//true 开机显示logo
@@ -41,6 +45,14 @@ extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 
 #define sysBits 0
 #define colBits 1
+typedef struct fw_version {
+	uint16_t yy;
+	uint8_t mm;
+	uint8_t dd;
+	uint8_t vv;
+}fwVersionType;
+
+
 struct settings_Bits{
 	uint8_t bit0 	:1;
 	uint8_t bit1 	:1;
@@ -59,13 +71,15 @@ typedef union{
 
 struct orgData{
 	//版本信息
-	uint16_t FWversion;
+	fwVersionType FWversion;
 	//数据采集
 	uint32_t TimeRUN;				// 累计运行时间--RUN
 	uint32_t TimeLPW_RUN;			// 累计运行时间--LPW_RUN
-	uint32_t TImeSTOP1;				// 累计运行时间--STOP1
-	uint16_t NumOfDataCollected;	// 已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)
-	uint16_t NumOfDataWillCollect;	// 将采集的数据组个数
+	uint32_t TimeSTOP1;				// 累计运行时间--STOP1
+	uint16_t NumDataCollected;		// 已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)
+	uint16_t NumDataWillCollect;	// 将采集的数据组个数
+	uint16_t NumDataSamples;		// 每个周期采集样本数
+	uint16_t NumDataOneDay;			// 每天次数//1~8640//24小时1次~10秒1次
 	//任务开始日期
 	uint16_t STyy;
 	uint16_t STMM;
@@ -73,13 +87,11 @@ struct orgData{
 	uint16_t SThh;
 	uint16_t STmm;
 	uint16_t STss;
-	//任务采集周期（+ 任务开始日期，可以配合RTClib的opertor算出结束日期）
-	uint16_t Thh;	//>24小时后, 换算为天
-	uint16_t Tmm;
-	uint16_t Tss;
-	//每个周期采集样本数（给滤波器的处理为一组数据，不会存未经滤波的多个数据组）
-	uint16_t TSamples;						//暂时不支持单独设置某一对象的样本数
-	//这个其实当全局变量好了，不需要存在eeprom
+	//本次根据任务采集周期计算的下次采集的闹钟时间，闹钟模式：匹配秒、分、时
+	//自动计算出，不需要在Colum的AutoVlaue中设置，可以用uint8_t
+	uint8_t Ahh;
+	uint8_t Amm;
+	uint8_t Ass;
 	//日期时间
 	uint16_t yy;	//0~99
 	uint16_t MM;

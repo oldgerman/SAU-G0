@@ -2,7 +2,7 @@
  * Colum.cpp
  *
  *  Created on: 2021年4月20日
- *      Author: OldGerman
+ *      Author: OldGerman (过气德国佬)
  */
 
 #include <Colum.hpp>

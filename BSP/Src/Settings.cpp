@@ -49,7 +49,10 @@ bool restoreSettings() {
 void resetSettings() {
 //	memset((void *)&systemSto.ctrl, 0, sizeof(systemStorageType));
 
-	systemSto.data.FWversion 		= FW_VERSION;
+	systemSto.data.FWversion.yy 	= FW_VERSION_yy;
+	systemSto.data.FWversion.mm 	= FW_VERSION_mm;
+	systemSto.data.FWversion.dd 	= FW_VERSION_dd;
+	systemSto.data.FWversion.vv 	= FW_VERSION_vv;
 	systemSto.data.yy 				= DATE_TIME_yy;
 	systemSto.data.MM 				= DATE_TIME_mm;
 	systemSto.data.dd				= DATE_TIME_dd;
@@ -61,14 +64,13 @@ void resetSettings() {
 	//熄屏唤醒
 	systemSto.data.Sensitivity 		= SENSITIVITY;
 	systemSto.data.SleepTime 		= SLEEP_TIME;
-
-
 	//大于1byte，需要union处理：
 	systemSto.data.TimeRUN					= 0;				// 累计运行时间--RUN
 	systemSto.data.TimeLPW_RUN				= 0;				// 累计运行时间--LPW_RUN
-	systemSto.data.TImeSTOP1				= 0;				// 累计运行时间--STOP1
-	systemSto.data.NumOfDataCollected		= 0;	// 已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)
-	systemSto.data.NumOfDataWillCollect		= 0;	// 将采集的数据组个数
+	systemSto.data.TimeSTOP1				= 0;				// 累计运行时间--STOP1
+	systemSto.data.NumDataCollected			= 0;	// 已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)
+	systemSto.data.NumDataWillCollect		= 0;	// 将采集的数据组个数
+	systemSto.data.NumDataOneDay			= 1;
 	//任务开始日期
 	systemSto.data.STyy						= 22;
 	systemSto.data.STMM						= 1;
@@ -76,12 +78,8 @@ void resetSettings() {
 	systemSto.data.SThh						= 0;
 	systemSto.data.STmm						= 0;
 	systemSto.data.STss						= 0;
-	//任务采集周期（+ 任务开始日期，可以配合RTClib的opertor算出结束日期）
-	systemSto.data.Thh						= 0;	//>24小时后, 换算为天
-	systemSto.data.Tmm						= 0;
-	systemSto.data.Tss						= 0;
 	//每个周期采集样本数（给滤波器的处理为一组数据，不会存未经滤波的多个数据组）
-	systemSto.data.TSamples					= 1;						//暂时不支持单独设置某一对象的样本数
+	systemSto.data.NumDataSamples			= 1;						//暂时不支持单独设置某一对象的样本数
 	//开关标志
 	systemSto.data.settingsBits[sysBits].ctrl	= B00000001;
 												// 76543210
@@ -95,12 +93,12 @@ void resetSettings() {
 												// bit[7]:
 	systemSto.data.settingsBits[colBits].ctrl	= B00000001;
 												// 76543210
-												// bit[0]: （LSB）RTC时间完整性标志位OSF，这个一旦变为1就只能手动清除
+												// bit[0]: （LSB）RTC振荡器停止标志位OSF，这个一旦变为1就只能手动清除
 												// bit[1]: 温湿度计--温度
 												// bit[2]: 温湿度计--湿度
 												// bit[3]: 大气压计--气压（例如BME280或MS5611）
 												// bit[4]: 环境光传感器--光照度
 												// bit[5]: 电池电压（等价于采集电量百分比）
-												// bit[6]: 本次采集周期的运行时间--LPW_RUN
+												// bit[6]: 预留
 												// bit[7]: （MSB）使能采集任务, 默认不使能
 }
