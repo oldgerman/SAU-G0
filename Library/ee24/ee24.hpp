@@ -137,7 +137,7 @@ public:
 	 * @retval  1    erase succeeded
 	 * @retval  0    erase failed
 	 */
-	bool    eraseChip(void);
+	bool    eraseChip(uint32_t bytes = 0);
 	bool 	write_test_A();
 
 	uint32_t determineMemSize();
@@ -152,7 +152,7 @@ private:
 	uint8_t 			devAddrConv(uint32_t address);
 	uint32_t 			memAddrConv(uint32_t address);
 	I2C_HandleTypeDef 	*_hi2c;
-	uint32_t 			_sizeMemKbit;		//容量，单位Kbit
+	uint16_t 			_sizeMemKbit;		//容量，单位Kbit
 	uint8_t				_sizePageByte;		//页大小，单位Byte
 	uint8_t 			_i2cAddr;			//EEPROM I2C 8bit地址，请将P位置0
 	uint32_t	 		_timeout;			//传输超时时间

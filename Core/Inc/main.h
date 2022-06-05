@@ -66,8 +66,12 @@ void Error_Handler(void);
 #define DISP_RES_GPIO_Port GPIOA
 #define PW_HOLD_Pin GPIO_PIN_6
 #define PW_HOLD_GPIO_Port GPIOA
+#define BAT_INFO_Pin GPIO_PIN_0
+#define BAT_INFO_GPIO_Port GPIOB
 #define KEY_OK_Pin GPIO_PIN_1
 #define KEY_OK_GPIO_Port GPIOB
+#define CHARGE_DETECT_Pin GPIO_PIN_6
+#define CHARGE_DETECT_GPIO_Port GPIOC
 #define SCL2_Pin GPIO_PIN_11
 #define SCL2_GPIO_Port GPIOA
 #define SDA2_Pin GPIO_PIN_12
@@ -93,7 +97,7 @@ extern SPI_HandleTypeDef hspi1;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern UART_HandleTypeDef huart2;
-
+extern ADC_HandleTypeDef hadc1;
 
 void usb_printf(const char *format, ...);
 void EXT_I2C1_Init();

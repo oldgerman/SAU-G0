@@ -145,6 +145,13 @@ typedef enum{
 }ButtonState;
 extern ButtonState buttons;		//全局按键状态
 
+//按键选择三种模式
+typedef enum{
+	SEL_1,	//按中键返回true
+	SEL_2,	//按左或右键，左键返回true，右键返回false
+	SEL_3,	//按任意键返回true
+}SelectState;
+
 //一颗按键的3种变化状态
 typedef enum{
   BUTTON_EX_NONE      		= 0,
@@ -159,7 +166,7 @@ extern uint32_t lastButtonTime;
 uint8_t getButtonA();
 uint8_t getButtonB();
 uint8_t getButtonOK();
-extern bool waitingToChooseOneFromTwo();
+extern bool waitingSelect(SelectState sel);
 ButtonState readButtonState();
 ButtonState getButtonState();
 #ifdef __cplusplus

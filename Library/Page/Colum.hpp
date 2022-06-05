@@ -146,8 +146,9 @@ public:
 	Colum(const char *Str, void (*FunPtr)(void), FunLoc FunLoc = LOC_NONE) :
 			str(Str), funPtr(FunPtr), funLoc(FunLoc) {}
 
-	Colum(const char *Str, settingsBitsType* Bits, uint8_t Mask)  :
-		str(Str), ptrBits(Bits), mask(Mask){}
+	Colum(const char *Str, settingsBitsType* Bits, uint8_t Mask,
+			void (*FunPtr)(void) = nullptr, FunLoc FunLoc = LOC_NONE)  :
+		str(Str), ptrBits(Bits), mask(Mask), funPtr(FunPtr), funLoc(FunLoc){}
 
 	//仅这个函数nextPage ≠ nullptr，该Colum对象进入下一个Page对象，三级及以上菜单使用
 	Colum(const char *Str, Page *NextPage) :
@@ -159,13 +160,14 @@ public:
 	const char *unit = nullptr;
 	Page *nextPage = nullptr;
 	Page *prevPage = nullptr;
+	settingsBitsType * ptrBits = nullptr;
+	uint8_t mask;
 	void (*funPtr)(void) = nullptr;	//改值页执行函数
 	FunLoc funLoc = LOC_NONE;			//注意操控bit的Colum构造函数没有初始化funLoc，导致ColumAdjust函数内运行到	if (ptrColum->funLoc == LOC_ENTER) {ptrColum->funPtr();里面使程序
 #if AUTOVALUE_MAP_TO_STRING
 	std::map<uint16_t, const char*> *ptrColumVal2Str = nullptr;//若有数值映射需要，则指向传入的map数组解析值到字符串
 #endif
-	settingsBitsType * ptrBits = nullptr;
-	uint8_t mask;
+
 };
 #endif
 #endif /* INC_COLUM_HPP_ */

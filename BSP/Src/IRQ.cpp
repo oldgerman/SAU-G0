@@ -3,6 +3,7 @@
  *
  *  Created on: 30 May 2020
  *      Author: Ralim
+ *      Modify:OldGerman
  */
 
 #include "IRQ.h"
@@ -10,7 +11,7 @@
 
 #include <stdio.h>	//提供 __unused 宏
 
-bool intFromRTC;	//RTC中断标记
+volatile bool intFromRTC;	//RTC中断标记
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin){
 	intFromRTC = true;
 }

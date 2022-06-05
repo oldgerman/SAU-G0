@@ -106,10 +106,12 @@ void Page::flashPage() {
 			{
 				const Colum *ptrColum = ptrPage->getColumsSelected();
 				//若Colum没有AutoValue对象，是纯函数指针的Colum，例如版本信息Colum
-				if (ptrColum->funPtr != nullptr && ptrColum->ptrAutoValue == nullptr)
+				if (ptrColum->funPtr != nullptr &&
+					ptrColum->ptrAutoValue == nullptr &&
+					ptrColum->ptrBits == nullptr)
 					ptrColum->funPtr();	//跳去执行函数指针的函数
 				else
-					//否则，Colum有AutoValue对象，执行colums的改值函数
+					//否则，Colum有AutoValue或settingsBitsType对象，执行colums的改值函数
 					columValAdjust(*ptrPage->_itrColums);
 			}
 			break;

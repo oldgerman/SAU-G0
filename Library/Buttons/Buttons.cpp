@@ -22,23 +22,32 @@ ButtonExchange buttonExchange = BUTTON_EX_NONE;	//用于标记button状态被更
 bool buttonIsBeep = true;						//用于标记button状态被更改
 
 ButtonState buttons = BUTTON_NONE;				//全局按键状态
+
+
 /**
- * 死循环等待左和右键二选一
+ * 死循环等待按键选择
  */
-bool waitingToChooseOneFromTwo()
+bool waitingSelect(SelectState sel)
 {
 	int8_t ok = -1;
+	ButtonState buttonsOld = buttons;
+	while(getButtonState() == buttonsOld)
+		;//		resetWatchdog();
 	for(;;)
 	{
 //		resetWatchdog();
 		ButtonState buttons = getButtonState();
 		switch(buttons)
 		{
+			case BUTTON_OK_SHORT:
+				if(sel == SEL_1 || sel == SEL_3) ok = 1;
+				break;
 			case BUTTON_A_SHORT:
-				ok = 1;
+				if(sel == SEL_2 || sel == SEL_3) ok = 1;
 				break;
 			case BUTTON_B_SHORT:
-				ok = 0;
+				if(sel == SEL_2) ok = 0;
+				if(sel == SEL_3) ok = 1;
 				break;
 			default:
 				break;
@@ -53,6 +62,9 @@ bool waitingToChooseOneFromTwo()
 
 		cntBuzzerTime = cntBuzzerTime % 4;
 	}
+	while(getButtonState() == buttonsOld)
+		;//		resetWatchdog();
+
 	return ok;
 }
 

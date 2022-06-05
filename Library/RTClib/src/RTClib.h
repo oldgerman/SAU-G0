@@ -54,12 +54,12 @@ extern "C" {
  * 例如成员分别为 {22 05 22 18 19 00}	表示 2022年5月22日18点19分00秒
  */
 struct uintDateTime{
-	uint8_t year;	//	后面的处理需要自己加2000
-	uint8_t month;
-	uint8_t date;
-	uint8_t hour;
-	uint8_t minute;
-	uint8_t second;
+	  uint16_t yOff; ///< Year offset from 2000
+	  uint16_t m;    ///< Month 1-12
+	  uint16_t d;    ///< Day 1-31
+	  uint16_t hh;   ///< Hours 0-23
+	  uint16_t mm;   ///< Minutes 0-59
+	  uint16_t ss;   ///< Seconds 0-59
 };
 /* USER CODE END ET */
 

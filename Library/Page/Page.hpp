@@ -53,7 +53,7 @@
 #include "stdio.h"	//提供sprintf
 
 #ifndef DBG_PAGE
-#define DBG_PAGE 1	//< Change 0 to 1 to open debug macro and check program debug information
+#define DBG_PAGE 0	//< Change 0 to 1 to open debug macro and check program debug information
 #if DBG_PAGE
 #define DBG_PAGE_PRINT usb_printf
 #else

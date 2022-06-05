@@ -3,6 +3,7 @@
  *
  *  Created on: 30 May 2020
  *      Author: Ralim
+ *      Modify:OldGerman
  */
 
 #ifndef BSP_MINIWARE_IRQ_H_
@@ -18,7 +19,7 @@ extern "C" {
 
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin);	//检测片外RTC中断的回调函数
 
-extern bool intFromRTC;
+extern volatile bool intFromRTC;
 
 //extern bool ADC_Injected_Callback_Mark;	//ADC HAL_ADCEx_InjectedConvCpltCallback标记
 

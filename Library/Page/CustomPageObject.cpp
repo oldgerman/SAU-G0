@@ -15,25 +15,26 @@
 /******************** 构造二级或三级菜单Colum或Page对象 ********************/
 //数据采集-->开始日期
 std::vector<Colum> columsDataCollectSTDateTime = {
-		Colum("总览", columsDataCollect_ScheduleSetting_STDateTime, LOC_ENTER),
-		Colum("年", &systemSto.data.STyy, 2, 99, 0, 1, 10),
-		Colum("月", &systemSto.data.STMM, 2, 12, 1, 1, 10),
-		Colum("日", &systemSto.data.STdd, 2, 31, 1, 1, 10),
-		Colum("时", &systemSto.data.SThh, 2, 23, 0, 1, 10),
-		Colum("分", &systemSto.data.STmm, 2, 59, 0, 1, 10),
-		Colum("秒", &systemSto.data.STss, 2, 59, 0, 1, 10)
+		Colum("总览", columsDataCollect_ScheduleSetting_StartDateTime, LOC_ENTER),
+		Colum("年", &systemSto.data.dtStartCollect.yOff, 2, 99, 0, 1, 10),
+		Colum("月", &systemSto.data.dtStartCollect.m, 2, 12, 1, 1, 10),
+		Colum("日", &systemSto.data.dtStartCollect.d, 2, 31, 1, 1, 10),
+		Colum("时", &systemSto.data.dtStartCollect.hh, 2, 23, 0, 1, 10),
+		Colum("分", &systemSto.data.dtStartCollect.mm, 2, 59, 0, 1, 10),
+		Colum("秒", &systemSto.data.dtStartCollect.ss, 2, 59, 0, 1, 10)
 };
 
 Page pageDataCollectSTDateTime(&columsDataCollectSTDateTime);
 
 //数据采集-->任务设置-->采集对象
 std::vector<Colum> columsDataCollectObj = {
-		Colum("停止标志", 	&systemSto.data.settingsBits[colBits], B00000001),	// RTC OSF (OSC STOP FLAG)
+//		Colum("停止标志", 	&systemSto.data.settingsBits[colBits], B00000001),	// RTC OSF (OSC STOP FLAG) //这个不能设置为是否采集，而是必须采集，保存值在bit[0]
 		Colum("温度", 		&systemSto.data.settingsBits[colBits], B00000010),
-		Colum("湿度", 		&systemSto.data.settingsBits[colBits], B00000100),
-		Colum("气压", 		&systemSto.data.settingsBits[colBits], B00001000),
-		Colum("照度", 		&systemSto.data.settingsBits[colBits], B00010000),
-		Colum("电池电压", 	&systemSto.data.settingsBits[colBits], B00100000)
+		Colum("湿度", 		&systemSto.data.settingsBits[colBits], B00000100)
+//		以下暂未实现：
+//		,Colum("气压", 		&systemSto.data.settingsBits[colBits], B00001000),
+//		Colum("照度", 		&systemSto.data.settingsBits[colBits], B00010000),
+//		Colum("电池电压", 	&systemSto.data.settingsBits[colBits], B00100000)
 };
 Page pageDataCollectObj(&columsDataCollectObj);
 
@@ -43,8 +44,9 @@ std::vector<Colum> columsDataCollect_ScheduleSetting = {
 		Colum("样本数", &systemSto.data.NumDataSamples, 2, 99, 1, 1, 10),
 		Colum("每天次数", &systemSto.data.NumDataOneDay, 4, Sec24H / 10, 1, 1, 10, nullptr, columsDataCollect_ScheduleSetting_NumDataOneDay, LOC_CHANGE),						//后台约束对齐到整除点
 		Colum("总次数", &systemSto.data.NumDataWillCollect, 4, 9999, 1, 1, 10, nullptr, columsDataCollect_ScheduleSetting_NumDataWillCollect, LOC_CHANGE),				//实时约束到最大容量
-		Colum("开始日期", &pageDataCollectSTDateTime),
-		Colum("结束日期", columsDataCollect_ScheduleSetting_EDDateTime, LOC_ENTER)			//	自动计算出
+		Colum("开始时间", &pageDataCollectSTDateTime),
+		Colum("下次时间", columsDataCollect_ScheduleSetting_NextDateTime, LOC_ENTER),
+		Colum("结束时间", columsDataCollect_ScheduleSetting_EndDateTime, LOC_ENTER)			//	自动计算出
 };
 
 Page pageDataCollect_ScheduleSetting(&columsDataCollect_ScheduleSetting);
@@ -53,19 +55,20 @@ Page pageDataCollect_ScheduleSetting(&columsDataCollect_ScheduleSetting);
 std::vector<Colum> columsDataCollect = {
 		Colum("任务设置", &pageDataCollect_ScheduleSetting),
 		Colum("任务进度", columsDataCollected_Schedule),
-		Colum("任务开关", &systemSto.data.settingsBits[colBits], B10000000),
-		Colum("删除任务", colum_FeaturesUnrealized),
-		Colum("清除记录", colum_FeaturesUnrealized)		//ee24_eraseChip();	//不能全部清除，只清空EEPROM的采集数据开始的位到最后的地址
+		Colum("任务开关", &systemSto.data.settingsBits[colBits], B10000000, columsDataCollect_Switch, LOC_EXTI),
+		Colum("删除任务", columsDataCollect_ScheduleDelete),
+		Colum("清除记录", columsDataCollect_CollectedDelete),		//ee24_eraseChip();	//不能全部清除，只清空EEPROM的采集数据开始的位到最后的地址
+		Colum("导出数据", columsDataCollect_Export)
 };
 
 //日期时间
 std::vector<Colum> columsDateTime = {
-		Colum("年", &systemSto.data.yy, 2, 99, 0, 1, 10),
-		Colum("月", &systemSto.data.MM, 2, 12, 1, 1, 10),
-		Colum("日", &systemSto.data.dd, 2, 31, 1, 1, 10),
-		Colum("时", &systemSto.data.hh, 2, 23, 0, 1, 10),
-		Colum("分", &systemSto.data.mm, 2, 59, 0, 1, 10),
-		Colum("秒", &systemSto.data.ss, 2, 59, 0, 1, 10),
+		Colum("年", &systemSto.data.dtSys.yOff, 2, 99, 0, 1, 10),
+		Colum("月", &systemSto.data.dtSys.m, 2, 12, 1, 1, 10),
+		Colum("日", &systemSto.data.dtSys.d, 2, 31, 1, 1, 10),
+		Colum("时", &systemSto.data.dtSys.hh, 2, 23, 0, 1, 10),
+		Colum("分", &systemSto.data.dtSys.mm, 2, 59, 0, 1, 10),
+		Colum("秒", &systemSto.data.dtSys.ss, 2, 59, 0, 1, 10),
 		Colum("更改时间", columsDateTime_ChangeDateTime, LOC_ENTER)	//这里也要检查时间有效性
 };
 
@@ -73,22 +76,23 @@ std::vector<Colum> columsDateTime = {
 /* 这个页的Coulms比正常的3少一个*/
 std::vector<Colum> columsDisplaySettings = {
 		Colum("屏幕亮度", &systemSto.data.ScreenBrightness, 3, 100, 1, 1, 10, "%", columsScreenSettings_Brightness, LOC_CHANGE),
-		Colum("开机图标", &systemSto.data.settingsBits[sysBits], B10000000)
+		Colum("开机图标", &systemSto.data.settingsBits[sysBits], B00000001)
 };
 
 //休眠唤醒
 std::vector<Colum> columsScreenOffAndWKUP = {
 		Colum("动作阈值", &systemSto.data.Sensitivity, 3, 100, 1, 1, 10, "%"),
-		Colum("自动休眠", &systemSto.data.settingsBits[sysBits], B00000001),
+		Colum("自动休眠", &systemSto.data.settingsBits[sysBits], B00000010),
 		Colum("时间阈值", &systemSto.data.SleepTime, 3, 900, 0, 1, 10, "S")	//最多亮屏15分钟
 };
 
 //辅助功能
 std::vector<Colum> columsAccessibility = {
 		Colum("扫描设备", 	columsAccessibility_I2CScaner, LOC_ENTER),
-		Colum("电池信息", 	columsAccessibility_Battery, LOC_ENTER),
+		Colum("电池", 	columsAccessibility_Battery, LOC_ENTER),	//各种模式的运行时间 也在里面统计
+		Colum("运行时间", columsAccessibility_RunTime),
 		Colum("重启", 		columsHome_Reset, LOC_ENTER),
-		Colum("恢复出厂",	columsAccessibility_ResetSettings, LOC_ENTER)
+		Colum("恢复出厂",	columsAccessibility_ResetSettings, LOC_ENTER)	//只恢复设置，不会清除已采集的数据
 };
 
 /******************** 构造二级菜单Page对象 ********************/
@@ -106,6 +110,12 @@ std::vector<Colum> columsHome = {
 		Colum("休眠唤醒", &pageScreenOffAndWKUP),
 		Colum("辅助功能", &pageAccessibility),
 		Colum("版本信息", columsHome_ShowVerInfo)
+};
+
+//版本信息
+std::vector<Colum> columsVersionInformation = {
+		Colum("ODGIRON-Firmware-v1.0", colum_FuncNull, LOC_ENTER),
+		Colum("By: OldGerman", colum_FuncNull, LOC_ENTER)
 };
 
 /******************** 构造一级菜单Page对象 ********************/

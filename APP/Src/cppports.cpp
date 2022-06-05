@@ -6,7 +6,6 @@
  */
 
 #include "cppports.h"
-#include "IRQ.h"
 #include "MillisTaskManager.h"
 /******************* C标准库 *******************/
 #include "stdio.h"   //提供vsnprintf()
@@ -19,14 +18,18 @@
 #include "oled_init.h"
 #include "DFRobot_AHT20.h"
 #include "LIS3DH.hpp"
-#include "RTClib.h"
+#include "ee24.hpp"
 #include "Buttons.hpp"
-
+#include "Page.hpp"
+#include "CustomPage.hpp"
 #define swPressedTimePowerOn 100		//至少短按开机时间
 #define swPressedTimeshutDown 2000		//至少长按关机时间
+#define oledContrastStepsMs 50			//oled每次亮度发生更改的步进时间
+#define ms_ADC_Calibration	200			//ADC自校准最少时间
+bool 	sysPowerOn = true;				//首次开机标记
 /******************* 温湿度计 *******************/
-uint8_t th_RH_X1 = 0;		//范围0~100，无小数点
-int16_t th_C_X10 = 0;		//温度有正负，-9.9~85.0
+uint8_t th_RH_X1 = 88;		//范围0~100，无小数点
+int16_t th_C_X10 = 888;		//温度有正负，-9.9~85.0
 bool th_MeasurementUpload = false;
 
 
@@ -69,17 +72,59 @@ volatile uint32_t rxTick = 0;
 
 /******************* 按键状态全局变量 *******************/
 extern ButtonState buttons;
-/******************* 获取Page *******************/
-#include "Page.hpp"
+/******************* 屏幕亮度 *******************/
+uint16_t screenBrightnessVal = 0;
+AutoValue screenBrightness(&screenBrightnessVal, 3, 100, 0, 5, 5, false);
+bool firstScreenBright = true; //亮屏标记
+
+/******************* 编译日期 *******************/
+typedef struct tagXDate {
+	int year;
+	int month;
+	int day;
+} XDate;
+
+XDate compileXDate;	//编译日期决定版本号后3组XX数字："v1.0.XX.XX.XX"
+
+/************ 16bit ADC DMA 测电池电压 ************/
+uint16_t ADCReadings[ADC_SAMPLES] = {0};
+static void calibrationADC(){
+//	__ExecuteFuncWithTimeout();
+	  while (HAL_ADCEx_Calibration_Start(&hadc1) != HAL_OK)
+		  ;
+}
+void startADC(){
+	  HAL_ADC_Start_DMA(&hadc1,(uint32_t *)&ADCReadings,ADC_SAMPLES);
+}
+/******************* 开机自检标记 *******************/
+//检查凡是可能存在超时的函数，标记它，不存储在EEPROM中
+//目前不实现本（超时跳过报告启动那些东西失败）功能，若容量有余会考虑
+settingsBitsType fucTimeOutBits;
+
 /******************* 任务调度器 *******************/
 static MillisTaskManager mtmMain;
 
 
-#include "ee24.hpp"
+
+/* 非阻塞下等待固定的时间
+ * @param timeOld 必须传入局部静态变量或全局变量
+ * @param 等待时间
+ * @return bool
+ */
+bool waitTime(uint32_t *timeOld, uint32_t wait) {
+	uint32_t time = HAL_GetTick();
+	if ((time - *timeOld) > wait) {	//250决定按键长按的延迟步幅
+		*timeOld = time;
+		return true;
+	}
+	return false;
+}
+
+
 void setup(){
 	powerOnDectet(swPressedTimePowerOn);
 #if 1
-//主线逻辑
+//主线程序
 	ee24.autoInit(false);
 	restoreSettings(); //恢复设置
 	setupGUI();
@@ -87,10 +132,10 @@ void setup(){
 	setupRTC();
 	setupAHT20();
 	setupMOV();
-//	while(1)
-//	{
-//		loopGUI();
-//	}
+	//校准ADC、开启ADC DMA
+	calibrationADC();
+	startADC();
+
     /*任务注册*/									//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
     mtmMain.Register(loopGUI, 25);                	//25ms：屏幕刷新
     mtmMain.Register(loopRTC, 100);                 //100ms：RTC监控
@@ -118,7 +163,7 @@ void setup(){
 		pageSize =  ee24.determinePageSize();
 		i = 0;
 	}
-#else
+#elif 0
 //RTC PCF2129 闹钟中断测试
 	setupRTC();
 	bool mmark;
@@ -136,6 +181,13 @@ void setup(){
 			mmark = rtc.alarmFired();
 			intFromRTC = false;
 		}
+	}
+#else
+	ee24.autoInit(false);
+	while(1){
+		ee24.eraseChip();
+
+		HAL_Delay(1000);
 	}
 #endif
 }
@@ -170,24 +222,24 @@ void loopRTC() {
 	if(nowCOMChanged)
 	{
 		rtc.adjust(DateTime(
-			nowRXbufferToNum.year + 2000U,//补上2000年
-			nowRXbufferToNum.month,
-			nowRXbufferToNum.date,
-			nowRXbufferToNum.hour,
-			nowRXbufferToNum.minute,
-			nowRXbufferToNum.second
+			nowRXbufferToNum.yOff + 2000U,//补上2000年
+			nowRXbufferToNum.m,
+			nowRXbufferToNum.d,
+			nowRXbufferToNum.hh,
+			nowRXbufferToNum.mm,
+			nowRXbufferToNum.ss
 		));
 		nowCOMChanged = false;
 	}
 	DBG_PRINT("%d/%d/%d %d:%d:%d\r\n",
 			//2022/12/31 (Wednesday) 21:45:32
 			//最多31个ASCII字符 + "\r\n\0" 是34个
-			nowRXbufferToNum.year,
-			nowRXbufferToNum.month,
-			nowRXbufferToNum.date,
-			nowRXbufferToNum.hour,
-			nowRXbufferToNum.minute,
-			nowRXbufferToNum.second
+			nowRXbufferToNum.yOff,
+			nowRXbufferToNum.m,
+			nowRXbufferToNum.d,
+			nowRXbufferToNum.hh,
+			nowRXbufferToNum.mm,
+			nowRXbufferToNum.ss
 	);
 
 	now = rtc.now();
@@ -216,38 +268,69 @@ void loopRTC() {
 	);
 //		HAL_Delay(500);
 }
+
+/**
+ * 返回睡眠超时阈值时间
+ */
+static uint32_t getSleepTimeout() {
+		return systemSto.data.SleepTime * 1000;
+}
 /**
  * 比较运动或按钮超时阈值，来决定返回是否睡眠
  * 超时并且未检测到运动和按钮动作返回true
  */
-static bool shouldBeSleeping(bool inAutoStart) {
-	// Return true if the iron should be in sleep mode
-//	if (systemSettings.Sensitivity && systemSettings.SleepTime) {
-		if (inAutoStart) {
-			// In auto start we are asleep until movement
-			if (lastMovementTime == 0 /*&& lastButtonTime == 0*/) {
+static bool shouldBeSleeping() {
+	if (systemSto.data.settingsBits[sysBits].bits.bit1) { 		//自动休眠位域
+		if (lastMovementTime > 0 || lastButtonTime > 0) {		//只有当这两个值非0才可能进入休眠
+			if ((HAL_GetTick() - lastMovementTime) > getSleepTimeout() //1000ms 临时设置的休眠超时时间
+				&& (HAL_GetTick() - lastButtonTime) > getSleepTimeout()) {
 				return true;
 			}
 		}
-		if (lastMovementTime > 0 /*|| lastButtonTime > 0*/) {
-			if ((HAL_GetTick() - lastMovementTime) > 500 //1000ms 临时设置的休眠超时时间
-				/*&& (HAL_GetTick() - lastButtonTime) > getSleepTimeout()*/) {
-				return true;
-			}
-		}
-//	}
+	}
 	return false;
 }
 
 void loopMIX()
 {
 //		loopI2cScan(1000);
-		loopMOV();
+//		loopMOV();	//合并到screenBrightAdj()
+		loopDataCollet();
 		loopAHT20();	//4次状态机一次测量
-		loopPowerOffDetect(swPressedTimeshutDown);
+
 //		HAL_Delay(100);	//也就是0.4s一次AHT20
 }
 
+void loopDataCollet(){
+	if(systemSto.data.settingsBits[colBits].bits.bit7){
+//		DateTime dt(
+//				systemSto.data.STyy + 2000,
+//				systemSto.data.STMM,
+//				systemSto.data.STdd,
+//				systemSto.data.SThh,
+//				systemSto.data.STmm,
+//				systemSto.data.STss);
+//		columsDrawDateTime(&dt);
+//
+//		bool mmark;
+//		DateTime alarmDateTime(2000, 1, 21, 0, 0, 5);	//每分钟的第5秒一次闹钟
+//		mmark = rtc.alarmFired();
+//		mmark =  rtc.clearFlagAlarm();
+//		mmark = rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_Second);
+//	//	mmark = rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_PerSecond);
+//		mmark = rtc.setIntAlarm(true);
+//		while(1) {
+//			now = rtc.now();
+//			if(intFromRTC){			//由G031的PB5检测PCF2129的中断下降沿回调函数更改
+//	//		if(rtc.alarmFired()){	//也可以轮询检测
+//				mmark = rtc.clearFlagAlarm();
+//				mmark = rtc.alarmFired();
+//				intFromRTC = false;
+//			}
+//		}
+
+	}
+}
 //检查串口键入时间的有效性
 void checkCOMDateTimeAdjustAvailable()
 {
@@ -257,12 +340,11 @@ void checkCOMDateTimeAdjustAvailable()
 	char* ptrBuf = (char*)aRxSaveBuffer;
 #endif
 
-   uint8_t* ptrNum = (uint8_t *) &(nowRXbufferToNum.year);
+   uint8_t* ptrNum = (uint8_t *) &(nowRXbufferToNum.yOff);
    for(int i = 0; i < 6; i++)
 	   *(ptrNum+i) = 0;
 
 	int j = 0;
-	bool CheckNumRange = true;	//检测输入数字是否在有效范围
     for(int i = 0; i < 17 ; i++)
     {
       if(!isDigit(*ptrBuf))
@@ -276,15 +358,30 @@ void checkCOMDateTimeAdjustAvailable()
     }
     COMDateTimeAdjust_countIsDigit = 17 - j;	//计算字符串中数字的个数
 
+    bool CheckNumRange = checkDateTimeAdjust(&nowRXbufferToNum);
+
+    //检查数字范围和数字个数的有效性
+	if(CheckNumRange && COMDateTimeAdjust_countIsDigit  == 12) {
+		usb_printf("Input is valid! ");
+	   nowCOMChanged = true;
+	}
+	else{
+		usb_printf("Invalid input! ");
+	   nowCOMChanged = false;
+	}
+}
+
+bool checkDateTimeAdjust(uintDateTime *dt) {
+	bool CheckNumRange = true;	//判断是否在有效范围
     //检查时间范围有效性
-	uint16_t year = nowRXbufferToNum.year;
-    uint8_t month = nowRXbufferToNum.month;
-    uint8_t date =  nowRXbufferToNum.date;
+	uint16_t year = dt->yOff;
+    uint8_t month = dt->m;
+    uint8_t date =  dt->d;
 
     //判断时分秒范围
-    if(((0 <= nowRXbufferToNum.hour && nowRXbufferToNum.hour <= 23) &&
-	   (0 <= nowRXbufferToNum.minute && nowRXbufferToNum.minute <= 59) &&
-	   (0 <= nowRXbufferToNum.second && nowRXbufferToNum.second <= 59))) {
+    if(((0 <= dt->hh && dt->hh <= 23) &&
+	   (0 <= dt->mm && dt->mm <= 59) &&
+	   (0 <= dt->ss && dt->ss <= 59))) {
 		if(0 <= year && year <= 99){														//年份是否有效
 			if (1 <= month && month <= 12) { 												//月份是否有效
 				if(month==4 || month==6 || month==9 || month==11) { 						//是否为非2月的小月
@@ -307,18 +404,8 @@ void checkCOMDateTimeAdjustAvailable()
 				}else CheckNumRange = false; 												//月份无效
 			}else CheckNumRange = false; 													//年份无效
 	}else CheckNumRange = false;															//时分秒无效
-
-    //检查数字范围和数字个数的有效性
-	if(CheckNumRange && COMDateTimeAdjust_countIsDigit  == 12) {
-		usb_printf("Input is valid! ");
-	   nowCOMChanged = true;
-	}
-	else{
-		usb_printf("Invalid input! ");
-	   nowCOMChanged = false;
-	}
+    return CheckNumRange;
 }
-
 void setupCOM()
 {
 	HAL_UART_Receive_IT(&huart2, aRxTemp, 1); //串口接收中断启动函数
@@ -374,13 +461,11 @@ void loopI2cScan(uint16_t ms) {
 }
 
 void powerOnDectet(uint16_t ms) {
+	uint32_t timeOld = HAL_GetTick();
 	/*电源使能保持*/
 	//usb_printf("Power On: Waiting...\r\n");
-	uint32_t time = HAL_GetTick();
-	while (HAL_GetTick() - time < ms) {
-		HAL_Delay(10);	//注意这里不能用HAL_Delay(),因为TIM17的中断好像还未被FreeRTOS配置到FreeRTOS的心跳节拍中同步计数
-						//若在这里使用HAL_Delay会导致按下z中键开机黑屏或oled显示一部分UI死机
-						//切记！，在每个线程的setup之前不能用HAL_Delay()
+	while (!waitTime(&timeOld, ms)){
+		;
 	}
 	HAL_GPIO_WritePin(PW_HOLD_GPIO_Port, PW_HOLD_Pin, GPIO_PIN_SET);
 }
@@ -396,7 +481,6 @@ void loopPowerOffDetect(uint16_t msShutDown) {
 			tick_sum += 100;
 			tick_cnt_old = tick_cnt;
 		} else {
-			// 定义unsigned int a=0，a-1的结果不�????-1，�?�是4294967295（无符号�????0xFFFFFFFF），这是�????么原因呢�????
 			tick_sum -= 100;
 			if (tick_sum < 0)
 				tick_sum = 0;
@@ -407,22 +491,78 @@ void loopPowerOffDetect(uint16_t msShutDown) {
 		HAL_GPIO_WritePin(PW_HOLD_GPIO_Port, PW_HOLD_Pin, GPIO_PIN_SET);
 	}
 	//累积关机
-	if (tick_sum > msShutDown)
+	if (tick_sum > msShutDown) {
+		shutScreen();
 		HAL_GPIO_WritePin(PW_HOLD_GPIO_Port, PW_HOLD_Pin, GPIO_PIN_RESET);
+	}
 }
 
 void setupGUI() {
 	u8g2.begin();
-	//u8g2.setPowerSave(0);
 	u8g2.setDrawColor(1);
 	u8g2.setBitmapMode(0);	//0是无色也覆盖下层的bitmap，无需u8g2.clearBuffer();
-	//u8g2.drawBitmap(0, 0, bitmap_height_TH_UI_Test, bitmap_width_TH_UI_Test,  bitmap_TH_UI_Test);
-
 	u8g2.clearBuffer();
-	u8g2.sendBuffer();
+
+	//强制更新最后一次动作状态时间
+	lastButtonTime = HAL_GetTick() - systemSto.data.SleepTime;
+	lastMovementTime = HAL_GetTick() - systemSto.data.SleepTime;
+
+	//从Flash载入屏幕亮度为screenBrightness的最大值
+	//woc,那这里德国烙铁写错了
+	screenBrightness.upper = systemSto.data.ScreenBrightness;
+	setContrast(*screenBrightness.val);	//这个时候*val还是0
+	u8g2.sendBuffer();	//相当于在发送调节背光命令
+	firstScreenBright = true; //重置第一次亮屏标记
+
+	if(systemSto.data.settingsBits[sysBits].bits.bit0){
+		//绘制开机logo
+		drawLogoAndVersion();
+		u8g2.sendBuffer();
+		brightScreen();
+		uint32_t timeOld = HAL_GetTick();
+		while(!waitTime(&timeOld, 888))
+			;
+//		shutScreen();
+		u8g2.clearBuffer();
+//		u8g2.sendBuffer();
+	}
 }
 
+//这个函数准备用在定时器回调函数里调用
+void screenBrightAdj(){
+	loopMOV();
+	//超时熄屏
+	if (firstScreenBright
+			&& (*screenBrightness.val == screenBrightness.upper 	//从上电或熄屏唤醒首次达到最大亮度
+			|| *screenBrightness.val == screenBrightness.lower)){	//从熄屏最低亮度唤起
+		firstScreenBright = false;
+	}
+
+	if (shouldBeSleeping()){
+//		u8g2.setFont(u8g2_font_profont22_mr);	//12pixel 字间距
+//		u8g2.setFontRefHeightExtendedText();
+//		u8g2.drawStr(FONT16_XOFFSET, 15, "PWR OFF");
+		static uint32_t timeOld = HAL_GetTick();
+		if(waitTime(&timeOld, oledContrastStepsMs)) {
+			screenBrightness--;
+			setContrast(*screenBrightness.val);
+		}
+		if (*screenBrightness.val == 0) {
+			u8g2.setPowerSave(1);
+			firstScreenBright = true;
+		} else
+			u8g2.setPowerSave(0);
+	} else {
+			static uint32_t timeOld = HAL_GetTick();
+			if(waitTime(&timeOld, oledContrastStepsMs)) {
+				screenBrightness++;
+				setContrast(*screenBrightness.val);
+				u8g2.setPowerSave(0);
+			}
+	}
+}
 void loopGUI() {
+	loopPowerOffDetect(swPressedTimeshutDown);
 	//一些标记变量用于按键状态锁定，因为主屏进入菜单是长按中键，菜单返回主屏也是长按中键
 	static bool markBackFromMenu = false;
 	static ButtonState oldButtons;
@@ -440,6 +580,10 @@ void loopGUI() {
 		case BUTTON_A_SHORT:
 			break;
 		case BUTTON_A_LONG:
+			oldButtons = buttons;
+			columsAccessibility_Battery();
+			u8g2.clearBuffer();
+			markBackFromMenu = true;
 			break;
 		case BUTTON_B_SHORT:
 			break;
@@ -450,11 +594,12 @@ void loopGUI() {
 		case BUTTON_BOTH_LONG:
 			break;
 		case BUTTON_OK_SHORT:
-			enterSettingsMenu(); // enter the settings menu
-			u8g2.clearBuffer();
-			u8g2.sendBuffer();
-			markBackFromMenu = true;
-			oldButtons = buttons;
+			if(*screenBrightness.val != screenBrightness.lower){
+				oldButtons = buttons;
+				enterSettingsMenu(); // enter the settings menu
+				u8g2.clearBuffer();
+				markBackFromMenu = true;
+			}
 			break;
 		case BUTTON_OK_LONG:
 			break;
@@ -463,13 +608,19 @@ void loopGUI() {
 		}
 	}
 
-	//绘制温湿度信息
-	if (th_MeasurementUpload) {
-		th_MeasurementUpload = false;
+	screenBrightAdj();
 
+	//绘制温湿度信息
+	if (th_MeasurementUpload || sysPowerOn || markBackFromMenu) {
+		th_MeasurementUpload = false;
+		sysPowerOn = false;
 		u8g2.setDrawColor(1);
 		uint16_t busZNum1, busZNum2, busPNum1;
 		// th_C_X10 = 234  实际23.4摄氏度
+		if(markBackFromMenu){
+			th_C_X10 = 888;
+			th_RH_X1 = 88;
+		}
 		busZNum1 = th_C_X10 / 100;	//2 得到十位
 		th_C_X10 = th_C_X10 % 100;	//取模得到 34
 		busZNum2 = th_C_X10 / 10;	//3 得到个位
@@ -503,7 +654,7 @@ void loopGUI() {
 	u8g2.drawBox(0, 23, 64, 2);	//分割线
 
 	//绘制休眠检测标记点，显示表示不休眠，不显示表示休眠时间已到
-	if(shouldBeSleeping(true))
+	if(shouldBeSleeping())
 	{
 		u8g2.setDrawColor(0);
 		u8g2.drawBox(0, 0, 2, 2);
@@ -552,7 +703,7 @@ void loopGUI() {
 
 	//发送oled buffer
 	u8g2.sendBuffer();
-//	HAL_Delay(50);
+
 }
 
 DFRobot_AHT20 aht20(&FRToSI2C1);
@@ -588,7 +739,7 @@ void detectAccelerometerVersion() {
 		}
 	} else {
 		// disable imu sensitivity，没检测到加速度计，会禁用休眠模式
-//		systemSettings.Sensitivity = 0;
+//		systemSto.data.Sensitivity = 0;
 		DetectedAccelerometer = false;
 	}
 }
@@ -600,32 +751,24 @@ void detectAccelerometerVersion() {
  */
 inline void readAccelerometer(AxisData *axData, Orientation &rotation) {
 	if (DetectedAccelerometer) {
-		LIS3DH::getAxisData(axData);	//先读一次3轴向数据
-		rotation = LIS3DH::getOrientation();	//再读一次姿态
+		LIS3DH::getAxisData(axData);			//读3轴向数据
+		rotation = LIS3DH::getOrientation();	//读姿态
 	}
 }
 
-void setupMOV() {
-	// 检测加速度计型号，并做寄存器初始化配置
-	detectAccelerometerVersion();
-	HAL_Delay(50); // wait ~50ms for setup of accel to finalise
-
-	// 清零没运动的计时标记值（用于判断超时休眠）
-	lastMovementTime = 0;
-}
 void loopMOV() {
 	static int16_t datax[MOVFilter] = { 0 };
 	static int16_t datay[MOVFilter] = { 0 };
 	static int16_t dataz[MOVFilter] = { 0 };
 	static uint8_t currentPointer = 0;	//本次task
 	static Orientation rotation = ORIENTATION_FLAT;	//默认姿态：平坦
-	static int32_t threshold = map(10, 0, 100, 0, 2048);	//映射0~100到触发阈值0~2048范围
+	int32_t threshold = map(systemSto.data.Sensitivity, 0, 100, 0, 2048);	//映射0~100到触发阈值0~2048范围
 	//								^百分之10 临时使用
 
 	/*******************for*******************************/
 	readAccelerometer(&axData, rotation);
 //
-//		if (systemSettings.OrientationMode == 2) {
+//		if (systemSto.data.OrientationMode == 2) {
 //			if (rotation != ORIENTATION_FLAT) { //非平坦状态才会旋转屏幕
 //				//rotation是否等于左手的值0？
 //				//是则rotation=0, 即右手模式, 传入OLED::setRotation(1)
@@ -674,8 +817,57 @@ void loopMOV() {
 	// 如果发生了移动，那么我们更新滴答计时器
 	if (axisError > threshold) {
 		lastMovementTime = HAL_GetTick();	//更新动作时间
-		usb_printf("Movement detected!\r\n");		//若触发移动则打印
+		usb_printf("Movement detected! lastMovementTime = %ld\r\n", lastMovementTime);		//若触发移动则打印
 	}
+}
+
+
+
+/**
+ * 阻塞熄屏函数
+ */
+void setupMOV() {
+	// 检测加速度计型号，并做寄存器初始化配置
+	detectAccelerometerVersion();
+	HAL_Delay(50); // wait ~50ms for setup of accel to finalise
+
+	// 清零没运动的计时标记值（用于判断超时休眠）
+	lastMovementTime = 0;
+}
+void shutScreen() {
+	for (;;) {
+		static uint32_t timeOld = HAL_GetTick();
+		if(waitTime(&timeOld, oledContrastStepsMs)) {
+		screenBrightness--;
+		setContrast(*screenBrightness.val);
+		u8g2.sendBuffer(); //相当于在发送调节背光命令
+		if (*screenBrightness.val == screenBrightness.lower)
+			break;
+		}
+	}
+	u8g2.setPowerSave(1);
+}
+
+/**
+ * 阻塞亮屏函数
+ */
+void brightScreen() {
+	u8g2.setPowerSave(0);
+	for (;;) {
+		static uint32_t timeOld = HAL_GetTick();
+		if(waitTime(&timeOld, oledContrastStepsMs)) {
+			screenBrightness++;
+			setContrast(*screenBrightness.val);
+			u8g2.sendBuffer();	//相当于在发送调节背光命令
+			if (*screenBrightness.val == screenBrightness.upper)
+				break;
+		}
+	}
+}
+
+//映射0~100亮度到oled背光寄存器0~255
+void setContrast(uint16_t val) {
+	u8g2.setContrast(map(*screenBrightness.val, 0, 100, 0, 255));
 }
 
 
@@ -775,6 +967,83 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   }
 }
 
+
+#if 1
+void drawLogoAndVersion()
+{
+	//第一页
+//	u8g2.drawdrawXBM();
+	u8g2.drawBitmap(0, 17, startLogo_H, startLogo_W, startLogo_SAU_G0);
+	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
+	u8g2.drawStr(42, 39 , "v1.0");
+}
+#else
+
+/*此函数会在Os优化下占用4.19KB，
+ * 引入了 _vfiprintf_r 和 _vfprintf_r等恐龙级函数*/
+bool GetCompileDate(XDate *date) {
+	bool succeed = true;
+	char complieDate[] = { __DATE__ };	//"Jul 06 2021"
+	//字符串长度，可使用strlen()函数直接求出，切记，在使用strlen()求出字符串长度时，勿忘+1
+
+	/**
+	 strtok、strtok_s、strtok_r 字符串分割函数
+	 https://blog.csdn.net/hustfoxy/article/details/23473805
+	 */
+	char *ptr;
+	ptr = strtok(complieDate, " ");
+	char *month = ptr;
+	ptr = strtok(nullptr, " ");
+	char *day = ptr;
+	ptr = strtok(nullptr, " ");
+	char *yearNoIntercept = ptr;	//未截取的年分：4位
+	char year[3] = { 0 };					//储存截取年份的后2位
+	/*
+	 * C语言截取从某位置开始指定长度子字符串方法
+	 * https://blog.csdn.net/zmhawk/article/details/44600075
+	 */
+	strncpy(year, yearNoIntercept + 2, 2);	//截取年后两位
+	ptr = strtok(nullptr, " ");
+	date->day = atoi(day);	//atoi()函数：将字符串转换成int(整数)
+	if (date->day == 0)
+		succeed = false;
+	date->year = atoi(year);	//atoi()函数：将字符串转换成int(整数)
+	if (date->year == 0)
+		succeed = false;
+	//依次判断月份
+	const char months[][4] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+			"Aug", "Sep", "Oct", "Nov", "Dec" };
+	date->month = 0;
+	for (int i = 0; i < 12; i++) {
+		if (strcmp(month, months[i]) == 0) {
+			date->month = i + 1;
+			break;
+		}
+	}
+	if (date->month == 0)
+		succeed = false;
+	return succeed;
+}
+
+void drawLogoAndVersion(char firmwareMark)
+{
+	//第一页
+//	u8g2.drawXBM(0, 0, 128, 32, startLogo);
+	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
+
+	char buf[15] { 0 };	//"v1.0.21.06.12"; 固定13个可打印字符
+	if (GetCompileDate(&compileXDate)) {
+		sprintf(buf, "<A>%02d.%02d.%02d", compileXDate.year,
+				compileXDate.month, compileXDate.day);
+	} else {
+		sprintf(buf, "<A>XX.XX.XX");
+	}
+//	uint8_t x = OLED_WIDTH - strlen(buf) * 5/*5=字体宽度*/- 2/*计算失误的偏差*/;	//版本号右对齐
+	u8g2.drawStr(1, 10 , " Uni-Sensor");
+	u8g2.drawStr(4, 20 , "       v1.0");
+	u8g2.drawStr(0, 30, buf);
+}
+#endif
 /****************************************************
 *函数:strtoint(char *str,int result)
 *输入:unsigned 字符串
