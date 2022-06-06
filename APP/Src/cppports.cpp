@@ -136,7 +136,7 @@ void setup(){
 	calibrationADC();
 	startADC();
 
-    /*任务注册*/									//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
+    /*任务注册*/	//子任务里放for(;;)会阻塞其他任务//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
     mtmMain.Register(loopGUI, 25);                	//25ms：屏幕刷新
     mtmMain.Register(loopRTC, 100);                 //100ms：RTC监控
     mtmMain.Register(loopMIX, 200);   			 	//200ms：杂七杂八的传感器监控
@@ -295,42 +295,47 @@ void loopMIX()
 {
 //		loopI2cScan(1000);
 //		loopMOV();	//合并到screenBrightAdj()
-		loopDataCollet();
+//		loopDataCollet();
 		loopAHT20();	//4次状态机一次测量
 
 //		HAL_Delay(100);	//也就是0.4s一次AHT20
 }
 
 void loopDataCollet(){
-	if(systemSto.data.settingsBits[colBits].bits.bit7){
-//		DateTime dt(
-//				systemSto.data.STyy + 2000,
-//				systemSto.data.STMM,
-//				systemSto.data.STdd,
-//				systemSto.data.SThh,
-//				systemSto.data.STmm,
-//				systemSto.data.STss);
-//		columsDrawDateTime(&dt);
-//
-//		bool mmark;
-//		DateTime alarmDateTime(2000, 1, 21, 0, 0, 5);	//每分钟的第5秒一次闹钟
-//		mmark = rtc.alarmFired();
-//		mmark =  rtc.clearFlagAlarm();
-//		mmark = rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_Second);
-//	//	mmark = rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_PerSecond);
-//		mmark = rtc.setIntAlarm(true);
-//		while(1) {
-//			now = rtc.now();
-//			if(intFromRTC){			//由G031的PB5检测PCF2129的中断下降沿回调函数更改
-//	//		if(rtc.alarmFired()){	//也可以轮询检测
-//				mmark = rtc.clearFlagAlarm();
-//				mmark = rtc.alarmFired();
-//				intFromRTC = false;
-//			}
-//		}
+	if(systemSto.data.settingsBits[colBits].bits.bit7
+			 && intFromRTC 	){		//由G031的PB5检测PCF2129的中断下降沿回调函数更改
+		++systemSto.data.NumDataCollected.uint_16;	//增加已采集的数据个数,步进一次getScheduleSetting_NextDateTime()的计算结果
+		if(systemSto.data.NumDataCollected.uint_16 <= systemSto.data.NumDataWillCollect){
+			rtc.setIntAlarm(RESET);	//关闭Alarm中断
+			rtc.clearFlagAlarm();	//清除Alarm Flag
+			intFromRTC = RESET;		//复位EXT中断回调函数的标记类
 
+			DateTime alarmDateTime = getScheduleSetting_NextDateTime();	//得到下次任务时间
+			rtc.clearFlagAlarm();
+			rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_Hour);
+			rtc.setIntAlarm(SET);
+			numX4Type C_X4T = numSplit(th_C_X10 * 10);
+			numX4Type RH_X4T = numSplit(th_RH_X1 * 100);
+			uint8_t data[4] = {0};
+			data[0] = C_X4T.num3*10 + C_X4T.num2;
+			data[1] = C_X4T.num1*10 + C_X4T.num0;
+			data[2] = RH_X4T.num3*10 + RH_X4T.num2;
+			data[3] = RH_X4T.num1*10 + RH_X4T.num0;
+			ee24.writeBytes(
+					sizeof(systemStorageType) + (systemSto.data.NumDataCollected.uint_16 - 1)*sizeof(data),	//注意乘以数据组大小
+					data, 			//
+					sizeof(data));	//每次写入的数据byte数
+			//获取结构体成员偏移结构体地址多少byte
+			ee24.writeBytes(0, systemSto.data.NumDataCollected.ctrl, 2);
+		}
+		else {
+			systemSto.data.settingsBits[colBits].bits.bit7 = 0;	//任务开关:关闭
+			__LimitValue(systemSto.data.NumDataCollected.uint_16, //限制数量
+					0 , systemSto.data.NumDataWillCollect);
+		}
 	}
 }
+
 //检查串口键入时间的有效性
 void checkCOMDateTimeAdjustAvailable()
 {
@@ -539,9 +544,6 @@ void screenBrightAdj(){
 	}
 
 	if (shouldBeSleeping()){
-//		u8g2.setFont(u8g2_font_profont22_mr);	//12pixel 字间距
-//		u8g2.setFontRefHeightExtendedText();
-//		u8g2.drawStr(FONT16_XOFFSET, 15, "PWR OFF");
 		static uint32_t timeOld = HAL_GetTick();
 		if(waitTime(&timeOld, oledContrastStepsMs)) {
 			screenBrightness--;
@@ -594,12 +596,13 @@ void loopGUI() {
 		case BUTTON_BOTH_LONG:
 			break;
 		case BUTTON_OK_SHORT:
-			if(*screenBrightness.val != screenBrightness.lower){
+//			if(*screenBrightness.val != screenBrightness.lower){
 				oldButtons = buttons;
+				synchronisedTimeStartCollect();
 				enterSettingsMenu(); // enter the settings menu
 				u8g2.clearBuffer();
 				markBackFromMenu = true;
-			}
+//			}
 			break;
 		case BUTTON_OK_LONG:
 			break;
@@ -617,15 +620,17 @@ void loopGUI() {
 		u8g2.setDrawColor(1);
 		uint16_t busZNum1, busZNum2, busPNum1;
 		// th_C_X10 = 234  实际23.4摄氏度
+		uint16_t C_X10 = th_C_X10;
+		uint16_t RH_X1 = th_RH_X1;
 		if(markBackFromMenu){
-			th_C_X10 = 888;
-			th_RH_X1 = 88;
+			C_X10 = 888;
+			RH_X1 = 88;
 		}
-		busZNum1 = th_C_X10 / 100;	//2 得到十位
-		th_C_X10 = th_C_X10 % 100;	//取模得到 34
-		busZNum2 = th_C_X10 / 10;	//3 得到个位
-		th_C_X10 = th_C_X10 % 10;	//取模得到4 小点数后第1位
-		busPNum1 = th_C_X10;
+		busZNum1 = C_X10 / 100;	//2 得到十位
+		C_X10 = C_X10 % 100;	//取模得到 34
+		busZNum2 = C_X10 / 10;	//3 得到个位
+		C_X10 = C_X10 % 10;	//取模得到4 小点数后第1位
+		busPNum1 = C_X10;
 		u8g2.drawBitmap(5, 0, bmpDigitalStyle1_W, bmpDigitalStyle1_H,
 				&bmpDigitalStyle1[busZNum1][0]);
 		u8g2.drawBitmap(21, 0, bmpDigitalStyle1_W, bmpDigitalStyle1_H,
@@ -635,9 +640,9 @@ void loopGUI() {
 				&bmpDigitalStyle1[busPNum1][0]);
 		u8g2.drawBitmap(56, 0, icon8x14_W, icon8x14_H, icon8x14DegreeC);//	摄氏度符号
 
-		busZNum1 = th_RH_X1 / 10;
-		th_RH_X1 = th_RH_X1 % 10;
-		busZNum2 = th_RH_X1;
+		busZNum1 = RH_X1 / 10;
+		RH_X1 = RH_X1 % 10;
+		busZNum2 = RH_X1;
 		u8g2.drawBitmap(5, 26, bmpDigitalStyle1_W, bmpDigitalStyle1_H,
 				&bmpDigitalStyle1[busZNum1][0]);
 		u8g2.drawBitmap(21, 26, bmpDigitalStyle1_W, bmpDigitalStyle1_H,

@@ -114,8 +114,6 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   FRToI2CxSInit();//解锁I2C
-
-
   setup();
   /* USER CODE END 2 */
 

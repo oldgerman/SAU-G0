@@ -49,13 +49,7 @@ uint16_t getADC() {
    *	uint32_t 0~4294967295
    */
 }
-//使用union作为返回值方便拆分
-typedef struct num_X4 {
-	uint8_t num3;
-	uint8_t num2;
-	uint8_t num1;
-	uint8_t num0;
-}numX4Type;
+
 
 /*
  * 计算一个数的n次方
@@ -84,6 +78,7 @@ uint32_t numNthPower(uint8_t base, uint8_t exponent){
  */
 numX4Type numSplit(uint16_t num){
 	numX4Type numx4T;
+	memset(&numx4T, 0, sizeof(numX4Type));
 	uint8_t *ptr = &numx4T.num3;
 	for(int i = 0; i < 4; i ++){
 		uint16_t thPower10 = numNthPower(10, 3 - i);
@@ -223,8 +218,8 @@ struct history {
 	 */
 
 void columsDataCollect_Export(){
-//	if(systemSto.data.NumDataCollected != 0)
-	if(1)
+	if(systemSto.data.NumDataCollected.uint_16 != 0)
+//	if(1)
 	{
 		if(colums_StrSelect(true, SEL_2, "通过串口", 1, "导出数据？")) {
 			uint32_t timeCounter = HAL_GetTick();
@@ -236,22 +231,23 @@ void columsDataCollect_Export(){
 			u8g2.drawUTF8(x, y, "已导");
 			u8g2.drawUTF8(x, y + 16, "待导");
 			u8g2.drawUTF8(x, y + 32, "正在导出");
-
 			u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
+
 			uint8_t numXOffset = 10;
 			uint8_t places = 4;			//数据最大位数
-
 			usb_printf("| Date & Time     | T(C)  | H(%%)  |\r\n");	//格式化打印%需要输入两个%
 			usb_printf("| --------------- | ----- | ----- |\r\n");
-#if 1
-			DateTime dt = rtc.now();
-			for(uint16_t i = 0; i <= systemSto.data.NumDataWillCollect; i++) {
-				if(i <  systemSto.data.NumDataWillCollect) {
+
+			DateTime dt(getEEPROMData_DateTime(&systemSto.data.dtStartCollect));
+			for(uint16_t i = 0; i <= systemSto.data.NumDataCollected.uint_16; i++) {
+				if(i <  systemSto.data.NumDataCollected.uint_16) {
+					uint8_t data[4] = {0};
+					ee24.readBytes(sizeof(systemStorageType) + i * sizeof(data), data, sizeof(data));
 //	每行格式：			| 2022/5/10 8:00  | 18.72 | 65.83 |\r\n
 					TimeSpan timeSpan(
 							(Sec24H / systemSto.data.NumDataOneDay) * 	//得到任务周期，单位：秒
-							i);		//得到每次步进
-					DateTime now = dt + timeSpan;
+							i);											//得到每次步进
+					DateTime now = dt + timeSpan;	//虽然有operator+，但不能写dt = dt + timeSpan;
 					//导出为EXCEL真日期，不需要加前导0
 					usb_printf("| %d/%d/%d %d:%d:%d | %d.%d | %d.%d |\r\n",
 							now.year(),
@@ -260,19 +256,19 @@ void columsDataCollect_Export(){
 							now.hour(),
 							now.minute(),
 							now.second(),
-							18 + i,72,
-							52 + i,26
+							data[0],data[1],
+							data[2],data[3]
 					);
 				}
 				//每10次才更新一下显示计数
-				if((i % 10 == 0) || i == systemSto.data.NumDataWillCollect) {
+				if((i % 10 == 0) || i == systemSto.data.NumDataCollected.uint_16) {
 					u8g2.setDrawColor(0);
 					u8g2.drawBox(2+24, 0, 64, 32);
 					u8g2.setDrawColor(1);
 					drawNumber((OLED_WIDTH - numXOffset) - places * 6, y,
 							i, places);
 					drawNumber((OLED_WIDTH - numXOffset) - places * 6, y + 16,
-							systemSto.data.NumDataWillCollect - i, places);
+							systemSto.data.NumDataCollected.uint_16 - i, places);
 					u8g2.sendBuffer();
 				}
 			}
@@ -285,9 +281,6 @@ void columsDataCollect_Export(){
 			char buf[10] = {0};
 			sprintf(buf, "%ldms", timeCounter);
 			colums_StrSelect(true, SEL_3, "导出用时：", 1, buf, false);	//中文不能打unifont数字怎么办？
-#else
-			;	//正式程序
-#endif
 		}
 	}else
 		colums_StrSelect(true, SEL_3, "没有数据！", 1);
@@ -325,7 +318,7 @@ void columsDataCollected_Schedule(){
 	uint8_t numXOffset = 10;
 	uint8_t places = 4;			//数据最大位数
 	drawNumber((OLED_WIDTH - numXOffset) - places * 6, y + 16,
-			systemSto.data.NumDataCollected, places);
+			systemSto.data.NumDataCollected.uint_16, places);
 	drawNumber((OLED_WIDTH - numXOffset) - places * 6, y + 32,
 			systemSto.data.NumDataWillCollect, places);
 
@@ -375,9 +368,13 @@ void columsDataCollect_ScheduleDelete(){
 //	saveSettings();	这里不保存，等退出菜单一起保存
 }
 
+//清除记录
 void columsDataCollect_CollectedDelete(){
 	if(colums_StrSelect(true, SEL_2, nullptr, 1)){
-		ee24.eraseChip(sizeof(systemStorageType));
+		ee24.eraseChip(sizeof(systemStorageType));		//从systemStorageType之后的地址开始擦除剩余所有空间
+		systemSto.data.NumDataCollected.uint_16 = 0;	//清零已采集数量
+		ee24.writeBytes(0, systemSto.data.NumDataCollected.ctrl, 2);
+		systemSto.data.settingsBits[colBits].bits.bit7 = 0;	//任务开关:关闭
 	}
 }
 
@@ -484,7 +481,7 @@ DateTime getScheduleSetting_NextDateTime()
 	DateTime alarmDateTime(getEEPROMData_DateTime(&systemSto.data.dtStartCollect));
 	TimeSpan timeSpan(
 			(Sec24H / systemSto.data.NumDataOneDay) * 	//得到任务周期，单位：秒
-			systemSto.data.NumDataCollected);			//乘以已采集数据组个数，得到下次任务的时间戳
+			systemSto.data.NumDataCollected.uint_16);	//乘以已采集数据组个数，得到下次任务的时间戳
 	alarmDateTime = alarmDateTime + timeSpan;			//开始时间加上时间戳，得到下次任务的闹钟时间
 	return alarmDateTime;
 }
@@ -725,5 +722,17 @@ void columsHome_ShowVerInfo() {
 			u8g2.drawStr(0, 8 + i * 8, strVerInfo[i]);
 		u8g2.sendBuffer();
 		waitingSelect(SEL_3);
+	}
+}
+//当未开始任务，强制同步采样开始日期到最近的时间
+void synchronisedTimeStartCollect(){
+	if(!systemSto.data.settingsBits[colBits].bits.bit7 && 	//若任务开关：关闭
+			systemSto.data.NumDataCollected.uint_16 == 0) {	//且已采集的数据为0组
+		systemSto.data.dtStartCollect.yOff = now.year() - 2000;
+		systemSto.data.dtStartCollect.m = now.month();
+		systemSto.data.dtStartCollect.d = now.day();
+		systemSto.data.dtStartCollect.hh = now.hour();
+		systemSto.data.dtStartCollect.mm = now.minute();
+		systemSto.data.dtStartCollect.ss = now.second();
 	}
 }

@@ -43,7 +43,7 @@ bool restoreSettings() {
 }
 
 void resetDataCollectSettings(){
-	systemSto.data.NumDataCollected			= 0;	// 	已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)
+	systemSto.data.NumDataCollected.uint_16	= 0;	// 	已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)
 	systemSto.data.NumDataWillCollect		= 0;	// 	将采集的数据组个数
 	systemSto.data.NumDataSamples			= 1;	//	每个周期采集样本数（给滤波器的处理为一组数据，不会存未经滤波的多个数据组）//暂时不支持单独设置某一对象的样本数
 	systemSto.data.NumDataOneDay			= 1;	//	每天多少次

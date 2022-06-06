@@ -3,8 +3,11 @@
  *
  *  Created on: 2021年4月20日
  *      Author: OldGerman (过气德国佬)
+ *      基于C++容器list和vector的多级菜单类，支持任意级联，方便修改菜单结构，不使用数组查表法
+ *      菜单的跟随按键状态进行页面跳转、子菜单切换、修改值、支持修改1bit位域
+ *
  *      2021/04/20:
- *			用于ODGIRON的实现多级菜单，暂时只支持每页显示两个栏
+ *			用于实现ODGIRON的多级菜单，暂时只支持每页显示两个栏
  *			数据结构简述：
  *				所有Page对象中共享的ptrPageList链表，元素是 Page指针，会跟据当前多级菜单的位置增加或销毁元素
  *				每个page对象私有的_listColums链表，元素是 Colum指针，一旦创建后不会销毁
@@ -28,17 +31,22 @@
  *						实际需要根据columsTest3容器内有多少个匿名Colum合理分配堆空间
  *
  *			菜单行为：跟随Buttons库buttons的状态
- *			依赖的类： AutoValue、Colum
+ *			依赖的类：AutoValue、Colum
+ *			依赖的库：Buttons
  *
  *      2022/05/27:
  *      	适配每页大于两个栏的情况
- *      	记忆最后一次切花页时选中栏的位置
+ *      	记忆最后一次切换页时选中栏的位置
  *          适配 显示、循环特性 的特殊情况：每页至多显示n个栏时，当前页显示的栏数为m，m<n，且n-m不一定等于1
  *      2022/05/28:
  *      	支持union settingsBitsType内嵌位域结构体的指定位值修改，0和1 显示为ON/OFF
  *      	Colum类新增支持位域修改的 重载构造函数可以像如下方式在std::vector<Colum> XXX内构造:
  *      		Colum("自动休眠", &systemSto.data.settingsBits[0], B10000000)
  *      	该方式节省了new AutoValue的开销和eeprom，代价是Colum新增2个1byte成员：ptrBits和mask
+ *      2022/?/?
+ *      	添加_VIFEXTech的PageManger库，以状态机进行异步页面调度，
+ *      	消除所有子页面的for(;;)，从此作为MillisTaskManager的一个任务时，
+ *      	不会因为for(;;)而阻塞其他任务的调度
  */
 
 #ifndef INC_PAGE_HPP_

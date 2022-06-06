@@ -8,12 +8,13 @@
 
 #include "IRQ.h"
 #include "I2C_Wrapper.h"
-
+#include "cppports.h"
 #include <stdio.h>	//提供 __unused 宏
 
 volatile bool intFromRTC;	//RTC中断标记
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin){
 	intFromRTC = true;
+	loopDataCollet();
 }
 /*
  * 非阻塞模式（中断和DMA）中使用的I2C IRQHandler和回调（对__weak重写）

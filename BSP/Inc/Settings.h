@@ -47,7 +47,7 @@ extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 #define sysBits 0
 #define colBits 1
 typedef struct fw_version {
-	uint16_t yOff;
+	uint8_t yOff;
 	uint8_t m;
 	uint8_t d;
 	uint8_t v;
@@ -70,7 +70,15 @@ typedef union{
 	uint8_t ctrl;		//Colum对象成员prBits和mask修改bits时使用
 }settingsBitsType;
 
+
+typedef union{
+	uint16_t uint_16;
+	uint8_t ctrl[2];
+}byteX2Type;
+
 struct orgData{
+	//数据采集
+	byteX2Type NumDataCollected;	// 已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)，放在第一个好操作
 	//版本信息
 	fwVersionType FWversion;
 	//累计运行时间
@@ -78,7 +86,6 @@ struct orgData{
 	uint32_t TimeLPW_RUN;			// 累计运行时间--LPW_RUN
 	uint32_t TimeSTOP1;				// 累计运行时间--STOP1
 	//数据采集
-	uint16_t NumDataCollected;		// 已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)
 	uint16_t NumDataWillCollect;	// 将采集的数据组个数
 	uint16_t NumDataSamples;		// 每个周期采集样本数
 	uint16_t NumDataOneDay;			// 每天次数//1~8640//24小时1次~10秒1次
@@ -98,6 +105,9 @@ struct orgData{
 	uint16_t SleepTime;     	// 0~999S 亮屏时间, 0表示关闭
 	//开关标志
 	settingsBitsType settingsBits[2];
+	//锂电池电压
+	uint16_t batVoltage100;	//满电电压
+	uint16_t batVoltage0;	//保护电压
 };
 
 /*

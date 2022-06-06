@@ -46,4 +46,14 @@ void columsDataCollect_CollectedDelete();
 void columsDataCollect_Export();
 void columsAccessibility_RunTime();
 uint16_t getADC();
+void synchronisedTimeStartCollect();
+
+typedef struct num_X4 {
+	uint8_t num3;
+	uint8_t num2;
+	uint8_t num1;
+	uint8_t num0;
+}numX4Type;
+uint32_t numNthPower(uint8_t base, uint8_t exponent);
+numX4Type numSplit(uint16_t num);
 #endif /* __CUSTOM_PAGE */
