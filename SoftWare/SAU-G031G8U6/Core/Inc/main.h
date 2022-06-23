@@ -58,6 +58,9 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define INT_IMU_Pin GPIO_PIN_0
+#define INT_IMU_GPIO_Port GPIOA
+#define INT_IMU_EXTI_IRQn EXTI0_1_IRQn
 #define KEY_A_Pin GPIO_PIN_1
 #define KEY_A_GPIO_Port GPIOA
 #define KEY_B_Pin GPIO_PIN_4
@@ -101,6 +104,8 @@ extern ADC_HandleTypeDef hadc1;
 
 void usb_printf(const char *format, ...);
 void EXT_I2C1_Init();
+
+void SystemClock_Config(void);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
