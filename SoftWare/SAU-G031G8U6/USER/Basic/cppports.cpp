@@ -8,10 +8,7 @@
 #include "cppports.h"
 #include "MillisTaskManager.h"
 /******************* C标准库 *******************/
-#include "stdio.h"   //提供vsnprintf()
-#include "stdlib.h"  //提供abs()
 #include "string.h"	  //提供memset()
-#include "dtostrf.h" //提供dtostrf()
 /******************* 字体图标 *******************/
 #include "BMP.h"		//提供一些字体和图标的位图
 /******************* 硬件驱动 *******************/
@@ -21,39 +18,18 @@
 #include "Page.hpp"
 #include "CustomPage.hpp"
 
+#ifndef DBG_PRINT
+#if 0  //< Change 0 to 1 to open debug macro and check program debug information
+#define DBG_PRINT usb_printf
+#else
+	#define DBG_PRINT(...)
+	#endif
+#endif
 
 #define ms_ADC_Calibration	200			//ADC自校准最少时间
 bool 	sysPowerOn;				//首次开机标记
 
 
-/******************* RTC *******************/
-//由于SWD和串口不同时使用，故Debug只能模拟串口接收到了数据
-
-RTC_PCF212x rtc;
-DateTime now;	//now变量即作为打印时间的变量，也作为串口修改的时间字符串存储的变量
-bool nowCOMChanged;
-extern const char daysOfTheWeek[7][12];
-#define DBG_COM_DATE_TIME_ADJ 0					////< Change 0 to 1 to open debug
-#if DBG_COM_DATE_TIME_ADJ
-char testSaveBuffer[17] = {
-		'2', '2', '/', 						    //2022年
-		'0', '5','/', '2', '2', '/', 			//5月22日
-		'2', '1','/', '2', '6', '/', '4', '7'	//21时26分47秒
-};
-#endif
-uint8_t COMDateTimeAdjust_countIsDigit;
-uintDateTime  nowRXbufferToNum;
-/******************* USART *******************/
-uint8_t aRxTemp[2];
-uint8_t aRxBuffer[RX_BUFFER_SIZE];
-uint8_t TxBuffer[TX_BUFFER_SIZE];
-uint8_t aRxSaveBuffer[RX_BUFFER_SIZE];
-volatile uint8_t rxSaveCounter = 0;
-volatile uint8_t txBusy = 0;
-volatile uint8_t rxDone = 0;
-volatile uint8_t rxBusy = 0;
-volatile uint8_t rxCounter = 0;
-volatile uint32_t rxTick = 0;
 
 /******************* 按键状态全局变量 *******************/
 extern ButtonState buttons;
@@ -102,8 +78,8 @@ void setup(){
 	ee24.autoInit(false);
 	restoreSettings(); //恢复设置
 	setupGUI();
-	setupCOM();
-	setupRTC();
+	USART_Init();
+	RTC_Init();
 	TH_Init();
 	IMU_Init();
 	//校准ADC、开启ADC DMA
@@ -112,9 +88,9 @@ void setup(){
 
     /*任务注册*/	//子任务里放for(;;)会阻塞其他任务//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
     mtmMain.Register(loopGUI, 20);                	//25ms：屏幕刷新
-    mtmMain.Register(loopRTC, 100);                 //100ms：RTC监控
+    mtmMain.Register(RTC_Update, 100);                 //100ms：RTC监控
     mtmMain.Register(loopMIX, 200);   			 	//200ms：杂七杂八的传感器监控
-    mtmMain.Register(loopCOM, 1000);            	//1000ms：COM收发监控
+    mtmMain.Register(USART_Update, 1000);            	//1000ms：COM收发监控
 #elif 0
 //EE24类临时交换I2C引脚测试
 //	ee24_write_test_A();
@@ -174,85 +150,6 @@ void loop(){
 	}
 }
 
-void setupRTC()
-{
-	nowCOMChanged = false;
-	//如果是STOP1模式恢复过来，那么3.3V断过电，但RTC是没有断VBAT电源的，之前的配置仍然有效，所以不需要重新初始化
-	//从STOP1模式恢复过来时，
-	if(recoverFromSTOP1 == false){
-	  if (!rtc.begin(&FRToSI2C1, false)){
-		DBG_PRINT("Couldn't find RTC");
-
-		rtc.setIntAlarm(RESET);	//关闭Alarm中断
-		rtc.clearFlagAlarm();	//清除Alarm Flag
-	  }
-	}
-
-#if 0
-  if (rtc.lostPower()) {
-    DBG_PRINT("RTC source clock is running, let's set the time!");
-    // When time needs to be set on a new device, or after a power loss, the
-    // following line sets the RTC to the date & time this sketch was compiled
-//	    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    rtc.adjust(DateTime(SECONDS_FROM_1970_TO_2000));
-    // This line sets the RTC with an explicit date & time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-  }
-#endif
-}
-
-
-void loopRTC() {
-	if(nowCOMChanged)
-	{
-		rtc.adjust(DateTime(
-			nowRXbufferToNum.yOff + 2000U,//补上2000年
-			nowRXbufferToNum.m,
-			nowRXbufferToNum.d,
-			nowRXbufferToNum.hh,
-			nowRXbufferToNum.mm,
-			nowRXbufferToNum.ss
-		));
-		nowCOMChanged = false;
-	}
-	DBG_PRINT("%d/%d/%d %d:%d:%d\r\n",
-			//2022/12/31 (Wednesday) 21:45:32
-			//最多31个ASCII字符 + "\r\n\0" 是34个
-			nowRXbufferToNum.yOff,
-			nowRXbufferToNum.m,
-			nowRXbufferToNum.d,
-			nowRXbufferToNum.hh,
-			nowRXbufferToNum.mm,
-			nowRXbufferToNum.ss
-	);
-
-	now = rtc.now();
-	DBG_PRINT("%d/%d/%d (%s) %d:%d:%d\r\n",
-			//2022/12/31 (Wednesday) 21:45:32
-			//最多31个ASCII字符 + "\r\n\0" 是34个
-			now.year(),
-			now.month(),
-			now.day(),
-			daysOfTheWeek[now.dayOfTheWeek()],
-			now.hour(),
-			now.minute(),
-			now.second()
-	);
-	DBG_PRINT(" since midnight 1/1/1970 = %d s = %dd", now.unixtime(), now.unixtime() / 86400L);
-
-	// calculate a date which is 7 days, 12 hours, 30 minutes, 6 seconds into the future
-	DateTime future (now + TimeSpan(7,12,30,6));
-	DBG_PRINT(" now + 7d + 12h + 30m + 6s: %d/%d/%d %d:%d:%d",
-			future.year(),
-			future.month(),
-			future.day(),
-			future.hour(),
-			future.minute(),
-			future.second()
-	);
-}
-
 
 
 void loopMIX()
@@ -304,136 +201,6 @@ void DataCollect_Update(){
 		}
 	}
 }
-
-//检查串口键入时间的有效性
-void checkCOMDateTimeAdjustAvailable()
-{
-#if DBG_COM_DATE_TIME_ADJ
-		char* ptr = testSaveBuffer;
-#else
-	char* ptrBuf = (char*)aRxSaveBuffer;
-#endif
-
-   uint8_t* ptrNum = (uint8_t *) &(nowRXbufferToNum.yOff);
-   for(int i = 0; i < 6; i++)
-	   *(ptrNum+i) = 0;
-
-	int j = 0;
-    for(int i = 0; i < 17 ; i++)
-    {
-      if(!isDigit(*ptrBuf))
-        j++;
-      else
-    	  *(ptrNum + j) =  *(ptrNum + j) * 10 + (*ptrBuf - '0');	//	字符转整形
-
-      //与arduino串口每次接收1个字符不同
-      //本程序串口是y用缓冲区接收完整的一个字符串，因此ptr++
-      ptrBuf++;
-    }
-    COMDateTimeAdjust_countIsDigit = 17 - j;	//计算字符串中数字的个数
-
-    bool CheckNumRange = checkDateTimeAdjust(&nowRXbufferToNum);
-
-    //检查数字范围和数字个数的有效性
-	if(CheckNumRange && COMDateTimeAdjust_countIsDigit  == 12) {
-		usb_printf("Input is valid! ");
-	   nowCOMChanged = true;
-	}
-	else{
-		usb_printf("Invalid input! ");
-	   nowCOMChanged = false;
-	}
-}
-
-bool checkDateTimeAdjust(uintDateTime *dt) {
-	bool CheckNumRange = true;	//判断是否在有效范围
-    //检查时间范围有效性
-	uint16_t year = dt->yOff;
-    uint8_t month = dt->m;
-    uint8_t date =  dt->d;
-
-    //判断时分秒范围
-    if(((0 <= dt->hh && dt->hh <= 23) &&
-	   (0 <= dt->mm && dt->mm <= 59) &&
-	   (0 <= dt->ss && dt->ss <= 59))) {
-		if(0 <= year && year <= 99){														//年份是否有效
-			if (1 <= month && month <= 12) { 												//月份是否有效
-				if(month==4 || month==6 || month==9 || month==11) { 						//是否为非2月的小月
-					if(!(1 <= date && date <= 30)) CheckNumRange = false;					//小月最多30天
-				}
-				else {																		//为2月或大月
-						if(month==2) {														//检查2月
-							year += 2000U;													//补上2000年
-							//判断闰年 （四年一闰，百年不闰) || 四百年在闰年
-							if((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) { 	//是闰年
-								if(!(1 <= date && date <= 29))	CheckNumRange = false;		//检查2月日期（闰年 = 29天）
-							}else{															//非闰年
-								if(!(1 <= date && date <= 28))	CheckNumRange = false; 		//检查2月日期（非闰年 = 28天）
-							}
-						}
-						else { 																//检查大月
-							if(!(1 <= date && date <= 31)) CheckNumRange = false;			//日期是否在大月范围
-						}
-					}
-				}else CheckNumRange = false; 												//月份无效
-			}else CheckNumRange = false; 													//年份无效
-	}else CheckNumRange = false;															//时分秒无效
-    return CheckNumRange;
-}
-void setupCOM()
-{
-	HAL_UART_Receive_IT(&huart2, aRxTemp, 1); //串口接收中断启动函数
-	DBG_PRINT("MCU: Initialized.\r\n");
-}
-void loopCOM()
-{
-#if DBG_COM_DATE_TIME_ADJ
-		  checkCOMDateTimeAdjustAvailable();
-#else
-		loopUART(HAL_UART_TIMEOUT_VALUE);
-		if (rxSaveCounter && (!txBusy)) {
-		  checkCOMDateTimeAdjustAvailable();
-		  u2Print(aRxSaveBuffer, rxSaveCounter);
-		  rxSaveCounter = 0;
-		}
-#endif
-//		HAL_Delay(500);	//XCOM上位机定时发送数据的周期大于等于HAL_Delay()的时间才不会丢帧
-}
-
-void i2cScan(I2C_HandleTypeDef *hi2c, uint8_t i2cBusNum) {
-	uint8_t i = 0;
-	HAL_StatusTypeDef status;
-	DBG_PRINT("MCU: i2c%d scan...\r\n",i2cBusNum);
-
-	for (i = 0; i < 127; i++) {
-		status = HAL_I2C_Master_Transmit(hi2c, i << 1, 0, 0, 200);
-		if (status == HAL_OK) {
-			DBG_PRINT("addr: 0x%02X is ok\r\n",i);
-		} else if (status == HAL_TIMEOUT) {
-			DBG_PRINT("addr: 0x%02X is timeout\r\n",i);
-		} else if (status == HAL_BUSY) {
-			DBG_PRINT("addr: 0x%02X is busy\r\n",i);
-		}
-	}
-}
-
-void loopI2cScan(uint16_t ms) {
-	static uint8_t mark = 0;
-	static uint64_t tick_cnt_old = 0;
-	uint64_t tick_cnt = HAL_GetTick();
-	if (tick_cnt - tick_cnt_old > ms) {
-		tick_cnt_old = tick_cnt;
-
-		if (mark) {
-			i2cScan(&hi2c2, 2);
-			mark = 0;
-		} else {
-			i2cScan(&hi2c1, 1);
-			mark = 1;
-		}
-	}
-}
-
 
 
 static uint8_t indexFanFrame;
@@ -635,105 +402,6 @@ void loopGUI() {
 	u8g2.sendBuffer();
 
 }
-
-
-
-/**
- * @brief 以非阻塞模式发送数据到USRAT2
- * 			会回调重写的HAL_UART_TxCpltCallback()回调函数
- * 			length通常是用rxSaveCounter计数器的值
- * 			单独使用此函数也行，但一般配合串口接收中断用
- * 			单独使用建议使用usb_printf_IT()
- * 			Send message to UART2 peripheral.
- * @param {uint8_t}*sendBuff Buffer to send
- * @param {uint16_t}length Message length, 0 for const
- * @return {uint8_t} error code 1 for uart and Double Buffering busy, 2 for
- * empty or too long message.
- */
-uint8_t u2Print(uint8_t *sendBuff, uint16_t length) {
-  if (length == 0)
-	  return 2;
-  if (!txBusy) {
-    txBusy = 1;
-    HAL_UART_Transmit_IT(&huart2, sendBuff, length);
-  } else
-    return 1;
-  return 0;
-}
-
-
-/**
- * usb_printf()的非阻塞版本
- */
-void usb_printf_IT(const char *format, ...) {
-	va_list args;
-	uint32_t length;
-	va_start(args, format);
-	length = vsnprintf((char*) TxBuffer, TX_BUFFER_SIZE, (char*) format, args);
-	va_end(args);
-
-	u2Print(TxBuffer, length);
-}
-
-/**
- * 从https://blog.csdn.net/u010779035/article/details/104369515修改
- */
-void usb_printf(const char *format, ...) {
-	va_list args;
-	uint32_t length;
-	va_start(args, format);
-	length = vsnprintf((char*) TxBuffer, TX_BUFFER_SIZE, (char*) format, args);
-	va_end(args);
-	HAL_UART_Transmit(&huart2, TxBuffer, length, 1000);
-}
-
-/**
- * @brief uart service, call in while loop
- * @param {*}
- * @return {*}
- */
-void loopUART(uint16_t ms) {
-  if (rxDone || (rxBusy && HAL_GetTick() - rxTick > ms)) {
-    rxDone = 1;
-    if (rxSaveCounter) return;
-    memcpy(aRxSaveBuffer, aRxBuffer, rxCounter);
-    rxSaveCounter = rxCounter;
-    rxCounter = 0;
-    rxBusy = 0;
-    rxDone = 0;
-  }
-}
-
-/**
- * @brief  串口发送总断回调函数
- * 			解除busy标签
- * @param {UART_HandleTypeDef} *huart
- * @return {*}
- */
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-  txBusy = 0;
-}
-
-/**
- * @brief  Rx Transfer Uploadd callbacks.
- * @param  huart  Pointer to a UART_HandleTypeDef structure that contains
- *                the configuration information for the specified UART module.
- * @retval None
- */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  if (huart->Instance == USART2) {
-    if (!rxDone) {  //丢弃数据
-      rxBusy = 1;
-      rxTick = HAL_GetTick();
-      aRxBuffer[rxCounter++] = aRxTemp[0];
-      if (rxCounter > RX_BUFFER_SIZE) {
-        rxDone = 1;
-      }
-    }
-    HAL_UART_Receive_IT(&huart2, aRxTemp, 1);
-  }
-}
-
 
 #if 1
 void drawLogoAndVersion()

@@ -18,8 +18,6 @@
 
 extern "C" {
 
-void usb_printf(const char *format, ...);
-
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -65,15 +63,9 @@ void loop();
 void setupGUI();
 void loopGUI();
 
-void setupCOM();
-void loopCOM();
 
-void setupRTC();
-void loopRTC();
 
 void loopMIX();
-	void setupAHT20();
-	void loopAHT20();
 	void DataCollect_Update();
 
 void setupADC();
@@ -94,15 +86,6 @@ void drawLogoAndVersion();
 /* USER CODE BEGIN Private defines */
 
 
-#ifndef DBG_PRINT
-#if 0  //< Change 0 to 1 to open debug macro and check program debug information
-#define DBG_PRINT usb_printf
-#else
-	#define DBG_PRINT(...)
-	#endif
-#endif
-#define TX_BUFFER_SIZE 64
-#define RX_BUFFER_SIZE 64
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

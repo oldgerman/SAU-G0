@@ -291,7 +291,7 @@ void columsDateTime_ChangeDateTime(){
 	const Colum *ptrColum = Page::ptrPage->getColumsSelected();
 	columsDrawDateTime(&dt, ptrColum->str);
 	waitingSelect(SEL_3);
-	bool CheckNumRange = checkDateTimeAdjust(&dtSys);
+	bool CheckNumRange = RTC_CheckUintDateTime(&dtSys);
 	if(CheckNumRange){
 		if(colums_StrSelect(true, SEL_2, "时间有效！", 1, "更改时间？")) {
 			rtc.adjust(dt);

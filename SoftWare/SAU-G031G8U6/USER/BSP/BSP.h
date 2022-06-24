@@ -9,7 +9,7 @@
 #include "I2C_Wrapper.h"
 #include <stdbool.h>
 #include <stdint.h>
-
+#include "RTClib.h"	//提供uintDateTime
 
 /*
  * BSP.h -- Board Support
@@ -23,6 +23,8 @@
 extern FRToSI2C FRToSI2C1;
 extern FRToSI2C FRToSI2C2;
 extern "C" {
+void usb_printf(const char *format, ...);
+void usb_printf_IT(const char *format, ...);
 #endif
 
 void BSPInit(void);
@@ -54,6 +56,15 @@ void Power_AutoShutdownUpdate();
 void STOP1_to_RUN();
 extern bool recoverFromSTOP1;
 #ifdef __cplusplus
+/*USART*/
+void USART_Init();
+void USART_Update();
+bool USART_DateTimeUpdated();
+uintDateTime& USART_GetDateTime();
+/*RTC*/
+void RTC_Init();
+void RTC_Update();
+bool RTC_CheckUintDateTime(uintDateTime *dt);
 }
 #endif
 #endif /* BSP_BSP_H_ */
