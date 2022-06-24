@@ -11,13 +11,13 @@
 #include "oled_init.h"
 
 #define oledContrastStepsMs 50			//oled每次亮度发生更改的步进时间
-uint16_t screenBrightnessVal = 0;
+uint16_t screenBrightnessVal;
 AutoValue screenBrightness(&screenBrightnessVal, 3, 100, 0, 5, 5, false);
 bool firstScreenBright = true; //亮屏标记
 
 
 //映射0~100亮度到oled背光寄存器0~255
-void Contrast_Set(uint16_t val) {
+void Contrast_SetVal() {
 	u8g2.setContrast(map(*screenBrightness.val, 0, 100, 0, 255));
 }
 /**
@@ -28,7 +28,7 @@ void Contrast_Darken() {
 		static uint32_t timeOld = HAL_GetTick();
 		if(waitTime(&timeOld, oledContrastStepsMs)) {
 		screenBrightness--;
-		Contrast_Set(*screenBrightness.val);
+		Contrast_SetVal();
 		u8g2.sendBuffer(); //相当于在发送调节背光命令
 		if (*screenBrightness.val == screenBrightness.lower)
 			break;
@@ -46,7 +46,7 @@ void Contrast_Brighten() {
 		static uint32_t timeOld = HAL_GetTick();
 		if(waitTime(&timeOld, oledContrastStepsMs)) {
 			screenBrightness++;
-			Contrast_Set(*screenBrightness.val);
+			Contrast_SetVal();
 			u8g2.sendBuffer();	//相当于在发送调节背光命令
 			if (*screenBrightness.val == screenBrightness.upper)
 				break;
@@ -62,11 +62,21 @@ void Contrast_Brighten() {
 void Contrast_Init(){
 	//从Flash载入屏幕亮度为screenBrightness的最大值
 	//woc,那这里德国烙铁写错了
+	screenBrightnessVal = 0;
 	screenBrightness.upper = systemSto.data.ScreenBrightness;
-	*screenBrightness.val = screenBrightness.upper;
-	Contrast_Set(*screenBrightness.val);	//这个时候*val还是0
+	Contrast_SetVal();	//这个时候*val还是0
 }
 
+/**
+  * @brief  菜单里调节屏幕亮度调用的函数
+  * @param  None
+  * @retval None
+  */
+void Contrast_SetUpperAndVal(){
+	screenBrightness.upper = systemSto.data.ScreenBrightness;
+	*screenBrightness.val = screenBrightness.upper;
+	Contrast_SetVal();
+}
 /**
   * @brief  更新对比度（即OLED亮度）
   * @param  FunPtr 对比度为0时执行的函数
@@ -84,7 +94,7 @@ void Contrast_Update(void (*FunPtr)(void)){
 		static uint32_t timeOld = HAL_GetTick();
 		if(waitTime(&timeOld, oledContrastStepsMs)) {
 			screenBrightness--;
-			Contrast_Set(*screenBrightness.val);
+			Contrast_SetVal();
 		}
 		if (*screenBrightness.val == 0) {
 			u8g2.setPowerSave(1);
@@ -100,7 +110,7 @@ void Contrast_Update(void (*FunPtr)(void)){
 			static uint32_t timeOld = HAL_GetTick();
 			if(waitTime(&timeOld, oledContrastStepsMs)) {
 				screenBrightness++;
-				Contrast_Set(*screenBrightness.val);
+				Contrast_SetVal();
 				u8g2.setPowerSave(0);
 			}
 	}

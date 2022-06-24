@@ -586,7 +586,7 @@ void colum_FuncNull() {
  *  亮度为1仍有亮度，为0则熄屏
  */
 void columsScreenSettings_Brightness() {
-	Contrast_Init();
+	Contrast_SetUpperAndVal();
 }
 
 

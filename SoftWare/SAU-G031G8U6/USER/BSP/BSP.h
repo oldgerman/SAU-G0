@@ -49,7 +49,8 @@ int16_t TH_GetDataC_X10();
 uint8_t TH_GetDataRH_X1();
 /*Contrast*/
 void Contrast_Init();
-void Contrast_Set(uint16_t val);
+void Contrast_SetVal();
+void Contrast_SetUpperAndVal();
 void Contrast_Darken();
 void Contrast_Brighten();
 void Contrast_Update(void (*FunPtr)(void));

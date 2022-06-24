@@ -133,16 +133,16 @@ static void STOP1_GPIO_Config(void)
 	#define KEY_A_Pin GPIO_PIN_1
 	#define KEY_B_Pin GPIO_PIN_4
 	#define DISP_RES_Pin GPIO_PIN_5
-	#define PW_HOLD_Pin GPIO_PIN_6		//不能动它，需要在STOP1下运行到下降沿外部中断回调函数读这个引脚的值来判断当前系统是STOP1还是RUN模式
+	#define PW_HOLD_Pin GPIO_PIN_6		//不能动它，STOP1加速度计中断唤醒
 	#define SCL2_Pin GPIO_PIN_11
 	#define SDA2_Pin GPIO_PIN_12
 	#define DISP_CS_Pin GPIO_PIN_15
 
 	//GPIOB
 	#define BAT_INFO_Pin GPIO_PIN_0
-	#define KEY_OK_Pin GPIO_PIN_1
+	#define KEY_OK_Pin GPIO_PIN_1		//不能动它，STOP1按OK键唤醒
 	#define DISP_DC_Pin GPIO_PIN_4
-	//#define INT_RTC_Pin GPIO_PIN_5,这是唤醒引脚，非休眠模式和STOP1模式都配置为EXTI中断引脚
+	#define INT_RTC_Pin GPIO_PIN_5		//不能动它，STOP1 RTC唤醒
 	#define SDA1_Pin GPIO_PIN_7
 	#define SCL1_Pin GPIO_PIN_8
 	#endif
@@ -156,7 +156,7 @@ static void STOP1_GPIO_Config(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins of GPIO_MODE_ANALOG + GPIO_NOPULL*/
-  GPIO_InitStruct.Pin = BAT_INFO_Pin|KEY_OK_Pin|DISP_DC_Pin;
+  GPIO_InitStruct.Pin = BAT_INFO_Pin|DISP_DC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
