@@ -119,7 +119,7 @@ void setup(){
 	startADC();
 
     /*任务注册*/	//子任务里放for(;;)会阻塞其他任务//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
-    mtmMain.Register(loopGUI, 25);                	//25ms：屏幕刷新
+    mtmMain.Register(loopGUI, 20);                	//25ms：屏幕刷新
     mtmMain.Register(loopRTC, 100);                 //100ms：RTC监控
     mtmMain.Register(loopMIX, 200);   			 	//200ms：杂七杂八的传感器监控
     mtmMain.Register(loopCOM, 1000);            	//1000ms：COM收发监控
@@ -188,9 +188,14 @@ void setupRTC()
 	//如果是STOP1模式恢复过来，那么3.3V断过电，但RTC是没有断VBAT电源的，之前的配置仍然有效，所以不需要重新初始化
 	//从STOP1模式恢复过来时，
 	if(recoverFromSTOP1 == false){
-	  if (!rtc.begin(&FRToSI2C1, false))
+	  if (!rtc.begin(&FRToSI2C1, false)){
 		DBG_PRINT("Couldn't find RTC");
+
+		rtc.setIntAlarm(RESET);	//关闭Alarm中断
+		rtc.clearFlagAlarm();	//清除Alarm Flag
+	  }
 	}
+
 #if 0
   if (rtc.lostPower()) {
     DBG_PRINT("RTC source clock is running, let's set the time!");
@@ -254,26 +259,32 @@ void loopRTC() {
 			future.minute(),
 			future.second()
 	);
-//		HAL_Delay(500);
 }
 
 
 
 void loopMIX()
 {
-//		loopI2cScan(1000);
-		IMU_Update();	//合并到screenBrightAdj()
-		loopAHT20();	//4次状态机一次测量
+//	IMU_Update();	//合并到screenBrightAdj()
+	loopAHT20();	//4次状态机一次测量
+
+	/*
+	 * 如果intFromRTC由中断回调函数修改为TRUE，说明RTC中断产生
+	 * 直到AHT20完成测量既th_MeasurementUpload为true时，才执行loopDataCollect()
+	 * 并修改intFromRTC 为 false;
+	 */
+	if(intFromRTC && th_MeasurementUpload){
+			intFromRTC = false;
+			DataCollect_Update();
+	}
 }
 
-void loopDataCollet(){
-	if(systemSto.data.settingsBits[colBits].bits.bit7
-			 && intFromRTC 	){		//由G031的PB5检测PCF2129的中断下降沿回调函数更改
+void DataCollect_Update(){
+	if(systemSto.data.settingsBits[colBits].bits.bit7){
 		++systemSto.data.NumDataCollected.uint_16;	//增加已采集的数据个数,步进一次getScheduleSetting_NextDateTime()的计算结果
 		if(systemSto.data.NumDataCollected.uint_16 <= systemSto.data.NumDataWillCollect){
 			rtc.setIntAlarm(RESET);	//关闭Alarm中断
 			rtc.clearFlagAlarm();	//清除Alarm Flag
-			intFromRTC = RESET;		//复位EXT中断回调函数的标记类
 
 			DateTime alarmDateTime = getScheduleSetting_NextDateTime();	//得到下次任务时间
 			rtc.clearFlagAlarm();
@@ -432,7 +443,17 @@ void loopI2cScan(uint16_t ms) {
 
 
 
+static uint8_t indexFanFrame;
+static uint8_t secondPrev = now.second();
+static bool secondPiontColor = 1;	//秒时间闪烁点的颜色，1绘制白色，0绘制黑色
+static uint64_t secondPionthalf1s;		//秒点的半秒标记
+static uint32_t drawFanTimeOld;
+
 void setupGUI() {
+	indexFanFrame = 0;
+	secondPrev = now.second();
+	secondPiontColor = 1;
+	drawFanTimeOld = HAL_GetTick();
 
 	u8g2.begin();
 	u8g2.setDisplayRotation(U8G2_R2);
@@ -459,6 +480,23 @@ void setupGUI() {
 		while(!waitTime(&timeOld, 888))
 			;
 		u8g2.clearBuffer();
+	}
+}
+
+//执行过长的绘图程序中调用，例如绘制温湿度BITMAP
+//风扇是中心对称，每转每1/4转到会自对称度需要5帧，转一圈20帧
+void drawFan(bool sendBuffer){
+	if(waitTime(&drawFanTimeOld, 10))
+	{
+		//绘制小风扇
+		u8g2.setDrawColor(0);
+		u8g2.drawXBM(49 - 1, 26 - 2, 16, 16, &icon16x16Fan[indexFanFrame][0]);
+		indexFanFrame = (indexFanFrame + 1) % 5;	//0~4
+		u8g2.setDrawColor(1);
+		u8g2.drawBox(0, 23, 64, 2);	//分割线
+		u8g2.setDrawColor(1);
+		if(sendBuffer)
+			u8g2.sendBuffer();
 	}
 }
 
@@ -514,7 +552,6 @@ void loopGUI() {
 
 	//绘制温湿度信息
 	if (th_MeasurementUpload || sysPowerOn || markBackFromMenu) {
-		th_MeasurementUpload = false;
 		sysPowerOn = false;
 		u8g2.setDrawColor(1);
 		uint16_t busZNum1, busZNum2, busPNum1;
@@ -535,6 +572,7 @@ void loopGUI() {
 		u8g2.drawBitmap(21, 0, bmpDigitalStyle1_W, bmpDigitalStyle1_H,
 				&bmpDigitalStyle1[busZNum2][0]);
 		u8g2.drawBox(36, 20, 2, 2);	//温度小数点
+		drawFan(1);
 		u8g2.drawBitmap(40, 0, bmpDigitalStyle1_W, bmpDigitalStyle1_H,
 				&bmpDigitalStyle1[busPNum1][0]);
 		u8g2.drawBitmap(56, 0, icon8x14_W, icon8x14_H, icon8x14DegreeC);//	摄氏度符号
@@ -542,6 +580,7 @@ void loopGUI() {
 		busZNum1 = RH_X1 / 10;
 		RH_X1 = RH_X1 % 10;
 		busZNum2 = RH_X1;
+		drawFan(1);
 		u8g2.drawBitmap(5, 26, bmpDigitalStyle1_W, bmpDigitalStyle1_H,
 				&bmpDigitalStyle1[busZNum1][0]);
 		u8g2.drawBitmap(21, 26, bmpDigitalStyle1_W, bmpDigitalStyle1_H,
@@ -549,13 +588,7 @@ void loopGUI() {
 		u8g2.drawBitmap(37, 26, icon8x10_W, icon8x10_H, icon8x10Percent);//	湿度百分符号
 	}
 
-	//绘制小风扇
-	u8g2.setDrawColor(0);
-	static uint8_t indexFanFrame = 0;
-	u8g2.drawXBM(49 - 1, 26 - 2, 16, 16, &icon16x16Fan[indexFanFrame][0]);
-	indexFanFrame = (indexFanFrame + 1) % 5;	//0~4
-	u8g2.setDrawColor(1);
-	u8g2.drawBox(0, 23, 64, 2);	//分割线
+	drawFan(1);
 
 
 //绘制休眠检测标记点，显示表示不休眠，不显示表示休眠时间已到
@@ -570,9 +603,7 @@ void loopGUI() {
 
 
 	//绘制时间
-	static uint8_t secondPrev = now.second();
-	static bool secondPiontColor = 1;	//秒时间闪烁点的颜色，1绘制白色，0绘制黑色
-	static uint64_t secondPionthalf1s;		//秒点的半秒标记
+
 
 	if((secondPrev != now.second()) ||
 			(HAL_GetTick() - secondPionthalf1s >= 500))
@@ -626,6 +657,8 @@ void loopAHT20() {
 		th_RH_X1 = aht20.getHumidity_RH();
 		th_MeasurementUpload = true;
 	}
+	else
+		th_MeasurementUpload = false;
 }
 
 

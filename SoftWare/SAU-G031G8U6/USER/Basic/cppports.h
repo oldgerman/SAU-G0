@@ -74,7 +74,7 @@ void loopRTC();
 void loopMIX();
 	void setupAHT20();
 	void loopAHT20();
-	void loopDataCollet();
+	void DataCollect_Update();
 
 void setupADC();
 
