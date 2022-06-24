@@ -17,18 +17,18 @@ bool firstScreenBright = true; //亮屏标记
 
 
 //映射0~100亮度到oled背光寄存器0~255
-void setContrast(uint16_t val) {
+void Contrast_Set(uint16_t val) {
 	u8g2.setContrast(map(*screenBrightness.val, 0, 100, 0, 255));
 }
 /**
  * 阻塞熄屏函数
  */
-void shutScreen() {
+void Contrast_Darken() {
 	for (;;) {
 		static uint32_t timeOld = HAL_GetTick();
 		if(waitTime(&timeOld, oledContrastStepsMs)) {
 		screenBrightness--;
-		setContrast(*screenBrightness.val);
+		Contrast_Set(*screenBrightness.val);
 		u8g2.sendBuffer(); //相当于在发送调节背光命令
 		if (*screenBrightness.val == screenBrightness.lower)
 			break;
@@ -40,13 +40,13 @@ void shutScreen() {
 /**
  * 阻塞亮屏函数
  */
-void brightScreen() {
+void Contrast_Brighten() {
 	u8g2.setPowerSave(0);
 	for (;;) {
 		static uint32_t timeOld = HAL_GetTick();
 		if(waitTime(&timeOld, oledContrastStepsMs)) {
 			screenBrightness++;
-			setContrast(*screenBrightness.val);
+			Contrast_Set(*screenBrightness.val);
 			u8g2.sendBuffer();	//相当于在发送调节背光命令
 			if (*screenBrightness.val == screenBrightness.upper)
 				break;
@@ -54,7 +54,7 @@ void brightScreen() {
 	}
 }
 
-void ScreenBK_Update(void (*FunPtr)(void)){
+void Contrast_Update(void (*FunPtr)(void)){
 	//超时熄屏
 	if (firstScreenBright
 			&& (*screenBrightness.val == screenBrightness.upper 	//从上电或熄屏唤醒首次达到最大亮度
@@ -66,7 +66,7 @@ void ScreenBK_Update(void (*FunPtr)(void)){
 		static uint32_t timeOld = HAL_GetTick();
 		if(waitTime(&timeOld, oledContrastStepsMs)) {
 			screenBrightness--;
-			setContrast(*screenBrightness.val);
+			Contrast_Set(*screenBrightness.val);
 		}
 		if (*screenBrightness.val == 0) {
 			u8g2.setPowerSave(1);
@@ -82,7 +82,7 @@ void ScreenBK_Update(void (*FunPtr)(void)){
 			static uint32_t timeOld = HAL_GetTick();
 			if(waitTime(&timeOld, oledContrastStepsMs)) {
 				screenBrightness++;
-				setContrast(*screenBrightness.val);
+				Contrast_Set(*screenBrightness.val);
 				u8g2.setPowerSave(0);
 			}
 	}

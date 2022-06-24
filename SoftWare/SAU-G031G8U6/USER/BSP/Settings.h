@@ -40,7 +40,7 @@ extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 #define SCREEN_BRIGHTNESS 50U	//50% 亮度
 #define PW_ON_SHOW_LOGO 1U		//true 开机显示logo
 //熄屏唤醒
-#define SENSITIVITY		5U		//5%
+#define SENSITIVITY		10U		//设置默认触发阈值208mg , FS=2g, 1LSb = 16mg, 208mg = 13LSb, INT1_THS bit[0:6] 0~127, 13/127*100% 约 10%
 #define SLEEP_EN		1U		//true 开启休眠
 #define SLEEP_TIME		60U		//60S 后进入休眠
 

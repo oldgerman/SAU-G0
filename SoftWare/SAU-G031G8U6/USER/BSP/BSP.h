@@ -36,6 +36,7 @@ bool waitTime(uint32_t *timeOld, uint32_t wait);
 /*IMU*/
 void IMU_Init();
 void IMU_Update();
+void IMU_SetThreshold();
 extern uint32_t lastMovementTime;
 /*TH*/
 void TH_Init();
@@ -43,11 +44,11 @@ void TH_Update();
 bool TH_DataUpdated();
 int16_t TH_GetDataC_X10();
 uint8_t TH_GetDataRH_X1();
-/*Screen*/
-void setContrast(uint16_t val);
-void shutScreen();
-void brightScreen();
-void ScreenBK_Update(void (*FunPtr)(void));
+/*Contrast*/
+void Contrast_Set(uint16_t val);
+void Contrast_Darken();
+void Contrast_Brighten();
+void Contrast_Update(void (*FunPtr)(void));
 /*PWR*/
 bool shouldBeSleeping();
 bool powerOffDetect(uint16_t ms);
@@ -55,16 +56,18 @@ void Power_Init();
 void Power_AutoShutdownUpdate();
 void STOP1_to_RUN();
 extern bool recoverFromSTOP1;
-#ifdef __cplusplus
 /*USART*/
 void USART_Init();
 void USART_Update();
 bool USART_DateTimeUpdated();
-uintDateTime& USART_GetDateTime();
 /*RTC*/
 void RTC_Init();
 void RTC_Update();
+
+#ifdef __cplusplus
+/*USART*/
 bool RTC_CheckUintDateTime(uintDateTime *dt);
+uintDateTime& USART_GetDateTime();
 }
 #endif
 #endif /* BSP_BSP_H_ */

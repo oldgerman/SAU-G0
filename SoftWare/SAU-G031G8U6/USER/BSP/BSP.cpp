@@ -6,7 +6,7 @@
  */
 
 #include "BSP.h"
-#include "DFRobot_AHT20.h"
+
 
 /* 非阻塞下等待固定的时间
  * @param timeOld 必须传入局部静态变量或全局变量
@@ -27,6 +27,47 @@ void FRToI2CxSInit()
 {
 	FRToSI2C1.FRToSInit();
 	FRToSI2C2.FRToSInit();
+}
+
+#ifndef DBG_PRINT_I2C_SCAN
+#if 0  //< Change 0 to 1 to open debug macro and check program debug information
+#define DBG_PRINT_I2C_SCAN usb_printf
+#else
+#define DBG_PRINT_I2C_SCAN(...)
+#endif
+#endif
+void i2c_scaner(I2C_HandleTypeDef *hi2c, uint8_t i2cBusNum) {
+	uint8_t i = 0;
+	HAL_StatusTypeDef status;
+	DBG_PRINT_I2C_SCAN("MCU: i2c%d scan...\r\n",i2cBusNum);
+
+	for (i = 0; i < 127; i++) {
+		status = HAL_I2C_Master_Transmit(hi2c, i << 1, 0, 0, 200);
+		if (status == HAL_OK) {
+			DBG_PRINT_I2C_SCAN("addr: 0x%02X is ok\r\n",i);
+		} else if (status == HAL_TIMEOUT) {
+			DBG_PRINT_I2C_SCAN("addr: 0x%02X is timeout\r\n",i);
+		} else if (status == HAL_BUSY) {
+			DBG_PRINT_I2C_SCAN("addr: 0x%02X is busy\r\n",i);
+		}
+	}
+}
+
+void I2cScan_Update(uint16_t ms) {
+	static uint8_t mark = 0;
+	static uint64_t tick_cnt_old = 0;
+	uint64_t tick_cnt = HAL_GetTick();
+	if (tick_cnt - tick_cnt_old > ms) {
+		tick_cnt_old = tick_cnt;
+
+		if (mark) {
+			i2c_scaner(&hi2c2, 2);
+			mark = 0;
+		} else {
+			i2c_scaner(&hi2c1, 1);
+			mark = 1;
+		}
+	}
 }
 
 void unstick_I2C(I2C_HandleTypeDef * I2C_Handle) {

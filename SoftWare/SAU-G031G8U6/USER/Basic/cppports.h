@@ -59,21 +59,11 @@ bool waitTime(uint32_t *timeOld, uint32_t wait);
 
 void setup();
 void loop();
-
 void setupGUI();
 void loopGUI();
-
-
-
 void loopMIX();
 	void DataCollect_Update();
-
 void setupADC();
-
-void brightScreen();
-void shutScreen();
-void screenBrightAdj();
-void setContrast(uint16_t val);
 void drawLogoAndVersion();
 
 //void doAPPWork();//低优先级时间片调度任务：用户APP和UI绘图，SPI的发送其实可以改到DMA

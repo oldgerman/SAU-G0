@@ -81,7 +81,7 @@ std::vector<Colum> columsDisplaySettings = {
 
 //休眠唤醒
 std::vector<Colum> columsScreenOffAndWKUP = {
-		Colum("动作阈值", &systemSto.data.Sensitivity, 3, 100, 1, 1, 10, "%"),
+		Colum("动作阈值", &systemSto.data.Sensitivity, 3, 100, 1, 1, 10, "%", columsScreenOffAndWKUP_Sensitivity, LOC_EXTI),
 		Colum("自动休眠", &systemSto.data.settingsBits[sysBits], B00000010),
 		Colum("时间阈值", &systemSto.data.SleepTime, 3, 900, 0, 1, 10, "S")	//最多亮屏15分钟
 };

@@ -23,6 +23,7 @@ bool colums_StrSelect(bool featuresRealized, SelectState sel, const char *str = 
 		uint8_t OK_CXL_OffSetNumColum = 0, const char *str2 = nullptr, bool str2Chinese = true);
 void colum_FeaturesUnrealized();
 void columsScreenSettings_Brightness();
+void columsScreenOffAndWKUP_Sensitivity();
 void columsAccessibility_ResetSettings();
 void columsAccessibility_I2CScaner();
 void columsHome_Reset();

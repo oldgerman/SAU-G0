@@ -7,11 +7,9 @@
 
 #include "cppports.h"
 #include "MillisTaskManager.h"
-/******************* C标准库 *******************/
 #include "string.h"	  //提供memset()
-/******************* 字体图标 *******************/
 #include "BMP.h"		//提供一些字体和图标的位图
-/******************* 硬件驱动 *******************/
+
 #include "oled_init.h"
 #include "ee24.hpp"
 #include "Buttons.hpp"
@@ -29,21 +27,8 @@
 #define ms_ADC_Calibration	200			//ADC自校准最少时间
 bool 	sysPowerOn;				//首次开机标记
 
-
-
 /******************* 按键状态全局变量 *******************/
 extern ButtonState buttons;
-
-
-/******************* 编译日期 *******************/
-typedef struct tagXDate {
-	int year;
-	int month;
-	int day;
-} XDate;
-
-XDate compileXDate;	//编译日期决定版本号后3组XX数字："v1.0.XX.XX.XX"
-
 /************ 16bit ADC DMA 测电池电压 ************/
 uint16_t ADCReadings[ADC_SAMPLES] = {0};
 static void calibrationADC(){
@@ -69,9 +54,9 @@ uint16_t Debug_pageSize =  0;
 
 
 void setup(){
+	DBG_PRINT("MCU: Initialized.\r\n");
 	/*初始化或从STOP1退出时重置标记*/
 	sysPowerOn = true;
-
 	Power_Init();
 #if 1
 //主线程序
@@ -228,14 +213,14 @@ void setupGUI() {
 	//从Flash载入屏幕亮度为screenBrightness的最大值
 	//woc,那这里德国烙铁写错了
 	screenBrightness.upper = systemSto.data.ScreenBrightness;
-	setContrast(*screenBrightness.val);	//这个时候*val还是0
+	Contrast_Set(*screenBrightness.val);	//这个时候*val还是0
 	u8g2.sendBuffer();	//相当于在发送调节背光命令
 
 	if(systemSto.data.settingsBits[sysBits].bits.bit0){
 		//绘制开机logo
 		drawLogoAndVersion();
 		u8g2.sendBuffer();
-		brightScreen();
+		Contrast_Brighten();
 		uint32_t timeOld = HAL_GetTick();
 		while(!waitTime(&timeOld, 888))
 			;
@@ -363,8 +348,6 @@ void loopGUI() {
 
 
 	//绘制时间
-
-
 	if((secondPrev != now.second()) ||
 			(HAL_GetTick() - secondPionthalf1s >= 500))
 	{
@@ -403,7 +386,6 @@ void loopGUI() {
 
 }
 
-#if 1
 void drawLogoAndVersion()
 {
 	//第一页
@@ -412,101 +394,3 @@ void drawLogoAndVersion()
 	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
 	u8g2.drawStr(42, 39 , "v1.0");
 }
-#else
-
-/*此函数会在Os优化下占用4.19KB，
- * 引入了 _vfiprintf_r 和 _vfprintf_r等恐龙级函数*/
-bool GetCompileDate(XDate *date) {
-	bool succeed = true;
-	char complieDate[] = { __DATE__ };	//"Jul 06 2021"
-	//字符串长度，可使用strlen()函数直接求出，切记，在使用strlen()求出字符串长度时，勿忘+1
-
-	/**
-	 strtok、strtok_s、strtok_r 字符串分割函数
-	 https://blog.csdn.net/hustfoxy/article/details/23473805
-	 */
-	char *ptr;
-	ptr = strtok(complieDate, " ");
-	char *month = ptr;
-	ptr = strtok(nullptr, " ");
-	char *day = ptr;
-	ptr = strtok(nullptr, " ");
-	char *yearNoIntercept = ptr;	//未截取的年分：4位
-	char year[3] = { 0 };					//储存截取年份的后2位
-	/*
-	 * C语言截取从某位置开始指定长度子字符串方法
-	 * https://blog.csdn.net/zmhawk/article/details/44600075
-	 */
-	strncpy(year, yearNoIntercept + 2, 2);	//截取年后两位
-	ptr = strtok(nullptr, " ");
-	date->day = atoi(day);	//atoi()函数：将字符串转换成int(整数)
-	if (date->day == 0)
-		succeed = false;
-	date->year = atoi(year);	//atoi()函数：将字符串转换成int(整数)
-	if (date->year == 0)
-		succeed = false;
-	//依次判断月份
-	const char months[][4] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
-			"Aug", "Sep", "Oct", "Nov", "Dec" };
-	date->month = 0;
-	for (int i = 0; i < 12; i++) {
-		if (strcmp(month, months[i]) == 0) {
-			date->month = i + 1;
-			break;
-		}
-	}
-	if (date->month == 0)
-		succeed = false;
-	return succeed;
-}
-
-void drawLogoAndVersion(char firmwareMark)
-{
-	//第一页
-//	u8g2.drawXBM(0, 0, 128, 32, startLogo);
-	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
-
-	char buf[15] { 0 };	//"v1.0.21.06.12"; 固定13个可打印字符
-	if (GetCompileDate(&compileXDate)) {
-		sprintf(buf, "<A>%02d.%02d.%02d", compileXDate.year,
-				compileXDate.month, compileXDate.day);
-	} else {
-		sprintf(buf, "<A>XX.XX.XX");
-	}
-//	uint8_t x = OLED_WIDTH - strlen(buf) * 5/*5=字体宽度*/- 2/*计算失误的偏差*/;	//版本号右对齐
-	u8g2.drawStr(1, 10 , " Uni-Sensor");
-	u8g2.drawStr(4, 20 , "       v1.0");
-	u8g2.drawStr(0, 30, buf);
-}
-#endif
-/****************************************************
-*函数:strtoint(char *str,int result)
-*输入:unsigned 字符串
-*输出：整型数字
-比如：收到“12345”  赋值给变量就是12345
-https://blog.csdn.net/u013457167/article/details/45459887
-*****************************************************/
-//int mi(unsigned char dat, unsigned char mi) {
-//	unsigned char i;
-//	int sum = 1;
-//
-//	for (i = 0; i < mi; i++)
-//		sum = sum * dat;
-//
-//	return sum;
-//}
-//int strtoint(unsigned char* str, int result)
-// {
-//	int i, tmp = 0;         //i,tmp临时变量
-//	int length = strlen((char*) str);         //strlen参数为const char*,故强制转换
-//	i = 0;
-//	if (str[0] == '-')  //	可以输入-12345，负号也给你转成有符号整数
-//		i = 1;
-//	for (; i < length; i++) {
-//		tmp = str[i] & 0x0f;         //如果原数组中存放的是ascii码，直接将其转换为数字
-//		result += tmp * mi(10, length - i - 1); //1*100+2*10+3*1
-//	}
-//	if (str[0] == '-')
-//		return -result;
-//	return result;
-//}

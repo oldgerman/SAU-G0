@@ -50,7 +50,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "BSP.h"
-#include "Settings.h"	//	可能会修改 systemSto.data.Sensitivity
+#include "Settings.h"	//	提供systemSto.data.Sensitivity
 #include <string.h>
 #include <stdio.h>
 #include "lis3dh_reg.h"
@@ -90,7 +90,6 @@ static void platform_init(void);
 
 
 static stmdev_ctx_t dev_ctx; //The device interface function
-
 
 void lis3dh_wake_up_setup(void)
 {
@@ -136,10 +135,15 @@ void lis3dh_wake_up_setup(void)
   lis3dh_full_scale_set(&dev_ctx, LIS3DH_2g);
 
 //INT1_THS
-  /* Set interrupt threshold to 0x10 -> 250 mg
-   * 设置中断阈值是250mg */
-  lis3dh_int1_gen_threshold_set(&dev_ctx, 0x10);
-
+  /* Set interrupt threshold
+   * 例如16，那么16x16 = 256 mg
+   * 注意不同Full Scale下每LSb代表的加速度步进值不一样：
+   * 1 LSb = 16 mg @ FS = ±2 g
+   * 1 LSb = 32 mg @ FS = ±4 g
+   * 1 LSb = 62 mg @ FS = ±8 g
+   * 1 LSb = 186 mg @ FS = ±16 g
+   * */
+  IMU_SetThreshold();
 //INT1_DURATION
   /* Set no time duration
    * 中断能触发的最短持续时间为0 */
@@ -223,6 +227,45 @@ void IMU_Update(){
 		DEBUG_PRINT_IMU("wake-up detected: x %d, y %d, z %d\r\n", src.xh, src.yh, src.zh);
 	}
 #endif
+}
+
+void IMU_SetThreshold(){
+	lis3dh_int1_gen_threshold_set(&dev_ctx, map(systemSto.data.Sensitivity, 0, 100, 0, 127));
+}
+
+//暂时没用
+uint8_t IMU_GetLSbSteps(){
+	/*
+	 * 注意不同Full Scale下每LSb代表的加速度步进值不一样：
+	 * 1 LSb = 16 mg @ FS = ±2 g
+	 * 1 LSb = 32 mg @ FS = ±4 g
+	 * 1 LSb = 62 mg @ FS = ±8 g
+	 * 1 LSb = 186 mg @ FS = ±16 g
+	 */
+	uint8_t LSb_Steps = 0;
+
+	//读取全量程以知道每LSb的g值
+	lis3dh_fs_t val = LIS3DH_2g;
+	lis3dh_full_scale_set(&dev_ctx, val);
+	switch (val)
+	{
+	case LIS3DH_2g:
+		LSb_Steps = 16;
+		break;
+	case LIS3DH_4g:
+		LSb_Steps = 32;
+		break;
+	case LIS3DH_8g:
+		LSb_Steps = 62;
+		break;
+	case LIS3DH_16g:
+		LSb_Steps = 186;
+		break;
+	default:
+		LSb_Steps = 0;
+		break;
+	}
+	return LSb_Steps;
 }
 
 /*

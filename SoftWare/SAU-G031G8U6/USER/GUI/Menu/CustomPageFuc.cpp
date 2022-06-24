@@ -596,9 +596,13 @@ void colum_FuncNull() {
 void columsScreenSettings_Brightness() {
 	screenBrightness.upper = systemSto.data.ScreenBrightness;
 	*screenBrightness.val = screenBrightness.upper;
-	setContrast(*screenBrightness.val);
+	Contrast_Set(*screenBrightness.val);
 }
 
+
+void columsScreenOffAndWKUP_Sensitivity(){
+	IMU_SetThreshold();
+}
 
 void columsAccessibility_ResetSettings() {
 	//向FLashEEPROM写入APP跳转回DFU的标志位，该情况bootloader不打印logo，无需按键直接进入DFU模式

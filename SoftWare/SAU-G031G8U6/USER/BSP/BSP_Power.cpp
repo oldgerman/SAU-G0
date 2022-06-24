@@ -91,7 +91,7 @@ bool powerOffDetect(uint16_t ms) {
 	}
 	//累积关机
 	if (powerOffDetect_tickSum > ms) {
-		shutScreen();
+		Contrast_Darken();
 		HAL_GPIO_WritePin(PW_HOLD_GPIO_Port, PW_HOLD_Pin, GPIO_PIN_RESET);
 //		for(;;)
 //			IMU_Update();//死循环，阻止任务调度导致屏幕又亮起来
@@ -246,7 +246,7 @@ void Power_Shutdown()
 void Power_AutoShutdownUpdate()
 {
 	if(powerOffDetect(swPressedTimeshutDown) == false)
-		ScreenBK_Update(Power_Shutdown);
+		Contrast_Update(Power_Shutdown);
 }
 
 
