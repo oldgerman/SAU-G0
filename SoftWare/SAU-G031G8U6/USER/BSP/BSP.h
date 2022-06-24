@@ -35,6 +35,12 @@ bool waitTime(uint32_t *timeOld, uint32_t wait);
 void IMU_Init();
 void IMU_Update();
 extern uint32_t lastMovementTime;
+/*TH*/
+void TH_Init();
+void TH_Update();
+bool TH_DataUpdated();
+int16_t TH_GetDataC_X10();
+uint8_t TH_GetDataRH_X1();
 /*Screen*/
 void setContrast(uint16_t val);
 void shutScreen();

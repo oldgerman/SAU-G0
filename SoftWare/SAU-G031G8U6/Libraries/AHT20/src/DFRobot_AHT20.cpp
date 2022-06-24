@@ -24,19 +24,19 @@
 //初始化状态机状态
 //DFRobot_AHT20::measurement_state  DFRobot_AHT20::state = MEASCheckStatus;
 
-// DBG修改为DBG_AHT
+// DBG修改为DBG_PRINT_AHT
 // DBG与STM32g031xx.h的冲突 #define DBG              ((DBG_TypeDef *) DBG_BASE)
 /*
- * 注意 搞 DBG_AHT 时，函数里加入的打印字符串会显著消耗任务栈空间的
- * 分配的TaskBuffer 128字的空间 不开 DBG_AHT足够，但开了就不够，执行到
+ * 注意 搞 DBG_PRINT_AHT 时，函数里加入的打印字符串会显著消耗任务栈空间的
+ * 分配的TaskBuffer 128字的空间 不开 DBG_PRINT_AHT足够，但开了就不够，执行到
  * hardfault_hander(), 看msp指针回退RAM到flash地址发现还是执行到configASSERT( xRerun != errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY);
  * 加大TaskBuffer到256字就正常了
  */
-#ifndef DBG_AHT
+#ifndef DBG_PRINT_AHT
 #if 0  //< Change 0 to 1 to open debug macro and check program debug information
-#define DBG_AHT usb_printf
+#define DBG_PRINT_AHT usb_printf
 #else
-	#define DBG_AHT(...)
+	#define DBG_PRINT_AHT(...)
 	#endif
 #endif
 
@@ -81,20 +81,20 @@ uint8_t DFRobot_AHT20::begin() {
 
 	//step1: Determine whether _pFRToSI2C is valid, if not, return 1, if valid, initialize the bus
 	if (!_pFRToSI2C) {
-		DBG_AHT("_pFRToSI2C is NULL!\r\n");
+		DBG_PRINT_AHT("_pFRToSI2C is NULL!\r\n");
 		return 1;
 	}
 	//step2: Determine whether the device is connected, return 2 if not connected
 	if (!_init) {
 		uint8_t ret = _pFRToSI2C->probe(_addr << 1);
 		if (ret == 0) {
-			DBG_AHT("Device not found, please check if the device is connected.\r\n");
+			DBG_PRINT_AHT("Device not found, please check if the device is connected.\r\n");
 			return 2;
 		}
 	}
 	//step3: Init, if it failed, return 3
 	if (!init()) {
-		DBG_AHT("SHT20 initialization fail.\r\n");
+		DBG_PRINT_AHT("SHT20 initialization fail.\r\n");
 		return 3;
 	}
 	//If AHT20 init succeeded, return 0
@@ -106,7 +106,7 @@ uint8_t DFRobot_AHT20::begin() {
 void DFRobot_AHT20::reset() {
 	uint8_t ret = _pFRToSI2C->probe(_addr << 1);
 	if (ret == 0)
-		DBG_AHT("Device not found, please check if the device is connected.\r\n");
+		DBG_PRINT_AHT("Device not found, please check if the device is connected.\r\n");
 
 	uint8_t data = CMD_SOFT_RESET;
 	_pFRToSI2C->Master_Transmit(_addr << 1, &data, 1);
@@ -119,7 +119,7 @@ void DFRobot_AHT20::reset() {
 DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_check_status() {
 	//如果状态是已自动校准并且 准备测量了
 	if (!ready()) {
-		DBG_AHT("Not cailibration.\r\n");
+		DBG_PRINT_AHT("Not cailibration.\r\n");
 	}
 	else {
 		//发送测量命令
@@ -146,12 +146,12 @@ DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_read_data(uint8_t* pData, u
 	//获取连续多个的测量数据寄存器值
 	if(_pFRToSI2C->Master_Receive(_addr << 1, pData, CMD_MEASUREMENT_DATA_LEN)){
 		for (int i = 0; i < CMD_MEASUREMENT_DATA_LEN; i++) {
-			DBG_AHT("pData = 0x%02X\r\n",pData[i]);
+			DBG_PRINT_AHT("pData = 0x%02X\r\n",pData[i]);
 		}
 		//获得值后，还是要检查值的状态寄存器的值是不是busy
 		status->status = pData[0];
 		if (status->busy) {
-			DBG_AHT("AHT20 is busy!\r\n");
+			DBG_PRINT_AHT("AHT20 is busy!\r\n");
 		}
 		else
 			return MEASCalculate;
@@ -162,7 +162,7 @@ DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_read_data(uint8_t* pData, u
 DFRobot_AHT20::measurement_state DFRobot_AHT20::meas_calculate(uint8_t* pData, bool *measCompleted){
 		//进行CRC校验
 	if (AHT20_CRC_EN && !checkCRC8(pData[6], &pData[0], CMD_MEASUREMENT_DATA_LEN - 1)) {
-		DBG_AHT("CRC check failed.\r\n");
+		DBG_PRINT_AHT("CRC check failed.\r\n");
 	}
 	else{
 		//CRC校验正确，计算温度
@@ -240,7 +240,7 @@ bool DFRobot_AHT20::checkCRC8(uint8_t crc8, uint8_t *pData, uint8_t len) {
 			}
 		}
 	}
-	DBG_AHT("crc = 0x%02X\r\n",crc);
+	DBG_PRINT_AHT("crc = 0x%02X\r\n",crc);
 	if (crc8 == crc)
 		return true;
 	return false;
@@ -272,7 +272,7 @@ bool DFRobot_AHT20::init() {
 uint8_t DFRobot_AHT20::getStatusData() {
 	uint8_t status = 0;
 	readData(CMD_STATUS, &status, 1);
-	DBG_AHT("status = 0x%02X\r\n",status);
+	DBG_PRINT_AHT("status = 0x%02X\r\n",status);
 	return status;
 }
 
@@ -290,7 +290,7 @@ bool DFRobot_AHT20::writeCommand(uint8_t cmd, uint8_t args1, uint8_t args2) {
 
 bool DFRobot_AHT20::readData(uint8_t cmd, void *pBuf, size_t size) {
 	if (pBuf == NULL) {
-		DBG_AHT("pBuf ERROR!! : null pointer\r\n");
+		DBG_PRINT_AHT("pBuf ERROR!! : null pointer\r\n");
 		return 0;
 	}
 	uint8_t *_pBuf = (uint8_t*) pBuf;

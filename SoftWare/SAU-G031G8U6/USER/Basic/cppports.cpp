@@ -16,7 +16,6 @@
 #include "BMP.h"		//提供一些字体和图标的位图
 /******************* 硬件驱动 *******************/
 #include "oled_init.h"
-#include "DFRobot_AHT20.h"
 #include "ee24.hpp"
 #include "Buttons.hpp"
 #include "Page.hpp"
@@ -25,10 +24,6 @@
 
 #define ms_ADC_Calibration	200			//ADC自校准最少时间
 bool 	sysPowerOn;				//首次开机标记
-/******************* 温湿度计 *******************/
-uint8_t th_RH_X1;		//范围0~100，无小数点
-int16_t th_C_X10;		//温度有正负，-9.9~85.0
-bool th_MeasurementUpload;
 
 
 /******************* RTC *******************/
@@ -100,9 +95,6 @@ uint16_t Debug_pageSize =  0;
 void setup(){
 	/*初始化或从STOP1退出时重置标记*/
 	sysPowerOn = true;
-	th_RH_X1 = 88;		//范围0~100，无小数点
-	th_C_X10 = 888;		//温度有正负，-9.9~85.0
-	th_MeasurementUpload = false;
 
 	Power_Init();
 #if 1
@@ -112,7 +104,7 @@ void setup(){
 	setupGUI();
 	setupCOM();
 	setupRTC();
-	setupAHT20();
+	TH_Init();
 	IMU_Init();
 	//校准ADC、开启ADC DMA
 	calibrationADC();
@@ -266,14 +258,15 @@ void loopRTC() {
 void loopMIX()
 {
 //	IMU_Update();	//合并到screenBrightAdj()
-	loopAHT20();	//4次状态机一次测量
+	TH_Update();
 
 	/*
 	 * 如果intFromRTC由中断回调函数修改为TRUE，说明RTC中断产生
 	 * 直到AHT20完成测量既th_MeasurementUpload为true时，才执行loopDataCollect()
 	 * 并修改intFromRTC 为 false;
 	 */
-	if(intFromRTC && th_MeasurementUpload){
+
+	if(intFromRTC && TH_DataUpdated()){
 			intFromRTC = false;
 			DataCollect_Update();
 	}
@@ -290,8 +283,8 @@ void DataCollect_Update(){
 			rtc.clearFlagAlarm();
 			rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_Hour);
 			rtc.setIntAlarm(SET);
-			numX4Type C_X4T = numSplit(th_C_X10 * 10);
-			numX4Type RH_X4T = numSplit(th_RH_X1 * 100);
+			numX4Type C_X4T = numSplit(TH_GetDataC_X10() * 10);
+			numX4Type RH_X4T = numSplit(TH_GetDataRH_X1() * 100);
 			uint8_t data[4] = {0};
 			data[0] = C_X4T.num3*10 + C_X4T.num2;
 			data[1] = C_X4T.num1*10 + C_X4T.num0;
@@ -551,13 +544,13 @@ void loopGUI() {
 	Power_AutoShutdownUpdate();	//从STOP模式退出，在此处继续执行
 
 	//绘制温湿度信息
-	if (th_MeasurementUpload || sysPowerOn || markBackFromMenu) {
+	if (TH_DataUpdated() || sysPowerOn || markBackFromMenu) {
 		sysPowerOn = false;
 		u8g2.setDrawColor(1);
 		uint16_t busZNum1, busZNum2, busPNum1;
 		// th_C_X10 = 234  实际23.4摄氏度
-		uint16_t C_X10 = th_C_X10;
-		uint16_t RH_X1 = th_RH_X1;
+		uint16_t C_X10 = TH_GetDataC_X10();
+		uint16_t RH_X1 = TH_GetDataRH_X1();
 		if(markBackFromMenu){
 			C_X10 = 888;
 			RH_X1 = 88;
@@ -642,28 +635,6 @@ void loopGUI() {
 	u8g2.sendBuffer();
 
 }
-
-DFRobot_AHT20 aht20(&FRToSI2C1);
-void setupAHT20() {
-	uint8_t status;
-	if ((status = aht20.begin()) != 0) {
-		DBG_PRINT("AHT20 sensor initialization failed. error status : %d\r\n", status);
-	}
-}
-
-void loopAHT20() {
-	if (aht20.measurementFSM()) {
-		th_C_X10 = aht20.getTemperature_C();
-		th_RH_X1 = aht20.getHumidity_RH();
-		th_MeasurementUpload = true;
-	}
-	else
-		th_MeasurementUpload = false;
-}
-
-
-
-
 
 
 
