@@ -53,7 +53,6 @@ void Contrast_SetVal();
 void Contrast_SetUpperAndVal();
 void Contrast_Darken();
 void Contrast_Brighten();
-void Contrast_Update(void (*FunPtr)(void));
 /*PWR*/
 bool shouldBeSleeping();
 bool powerOffDetect(uint16_t ms);
@@ -70,12 +69,15 @@ const char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "
 void RTC_Init();
 void RTC_Update();
 uint8_t RTC_GetNowSceond();
+bool RTC_AlarmWillTrigger();
 
 #ifdef __cplusplus
+/*Contrast*/
+void Contrast_Update(void (*FunPtr)(void) = nullptr);
 /*USART*/
-bool RTC_CheckUintDateTime(uintDateTime *dt);
 uintDateTime& USART_GetDateTime();
 /*RTC*/
+bool RTC_CheckUintDateTime(uintDateTime *dt);
 DateTime& RTC_GetNowDateTime();
 uint8_t RTC_GetNowSecond();
 extern RTC_PCF212x rtc;

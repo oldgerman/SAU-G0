@@ -236,7 +236,8 @@ protected:
 /**************************************************************************/
 /*!
     @brief  Timespan which can represent changes in time with seconds accuracy.
-    @brief  Timespan可以以秒为单位表示时间变化的时间跨度
+ 	 	 	Timespan可以以秒为单位表示时间变化的时间跨度
+    @note	注意时间戳内的数据成员可以为负
 */
 /**************************************************************************/
 class TimeSpan {
