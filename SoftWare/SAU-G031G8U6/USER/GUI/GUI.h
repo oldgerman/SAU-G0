@@ -1,19 +1,14 @@
- /*
- * cppports.h
+/*
+ * GUI.h
  *
- *  Created on: May 16, 2022
+ *  Created on: Jun 24, 2022
  *      Author: OldGerman
  */
 
-#ifndef INC_CPPPORTS_H_
-#define INC_CPPPORTS_H_
+#ifndef GUI_GUI_H_
+#define GUI_GUI_H_
 
-#include "main.h"
 #include "BSP.h"
-#include "oled_init.h"
-#include "IRQ.h"		//提供 intFromRTC 标记
-#include "RTClib.h"
-#include "Colum.hpp"
 #ifdef __cplusplus
 
 extern "C" {
@@ -45,10 +40,9 @@ extern "C" {
 /* 导出函数原型 Exported functions prototypes --------------------------------*/
 
 /* USER CODE BEGIN EFP */
-
-void setup();
-void loop();
-void MIX_Update();
+void GUI_Init();
+void GUI_Update();
+void DataCollect_Update();
 /* USER CODE END EFP */
 
 /* 私有定义 Private defines --------------------------------------------------*/
@@ -61,4 +55,5 @@ void MIX_Update();
 }
 #endif
 
-#endif /* INC_CPPPORTS_H_ */
+
+#endif /* GUI_GUI_H_ */

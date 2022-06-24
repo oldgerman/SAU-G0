@@ -32,7 +32,10 @@ void resetWatchdog();
 void FRToI2CxSInit(); //释放信号量以解锁I2C
 void unstick_I2C(I2C_HandleTypeDef *);
 bool waitTime(uint32_t *timeOld, uint32_t wait);
-
+/*ADC*/
+void ADC_Init();
+void ADC_Update();
+uint16_t ADC_Get();
 /*IMU*/
 void IMU_Init();
 void IMU_Update();
@@ -45,6 +48,7 @@ bool TH_DataUpdated();
 int16_t TH_GetDataC_X10();
 uint8_t TH_GetDataRH_X1();
 /*Contrast*/
+void Contrast_Init();
 void Contrast_Set(uint16_t val);
 void Contrast_Darken();
 void Contrast_Brighten();
@@ -61,13 +65,19 @@ void USART_Init();
 void USART_Update();
 bool USART_DateTimeUpdated();
 /*RTC*/
+const char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 void RTC_Init();
 void RTC_Update();
+uint8_t RTC_GetNowSceond();
 
 #ifdef __cplusplus
 /*USART*/
 bool RTC_CheckUintDateTime(uintDateTime *dt);
 uintDateTime& USART_GetDateTime();
+/*RTC*/
+DateTime& RTC_GetNowDateTime();
+uint8_t RTC_GetNowSecond();
+extern RTC_PCF212x rtc;
 }
 #endif
 #endif /* BSP_BSP_H_ */

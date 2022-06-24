@@ -36,21 +36,6 @@ void columsAccessibility_RunTime(){
 	colum_FeaturesUnrealized();
 }
 
-// channel 0 -> temperature sensor, 1-> VIN, 2-> tip
-uint16_t getADC() {
-  uint32_t sum = 0;
-  for (uint8_t i = 0; i < ADC_SAMPLES; i++) {
-	  sum += ADCReadings[i];
-  }
-  return sum >> 4;
-  /*
-   *sum 是否会溢出?
-   *	ADC_SAMPLES * 65535 = 1048560
-   *	uint32_t 0~4294967295
-   */
-}
-
-
 /*
  * 计算一个数的n次方
  * 注意结果不要溢出32位
@@ -134,7 +119,7 @@ struct history {
 	for (;;) {
 		Power_AutoShutdownUpdate();
 		/*读取电池电压*/
-		adcFilter.update(getADC());
+		adcFilter.update(ADC_Get());
 		uint32_t adcVal = adcFilter.average();
 		uint16_t battVoltageX100 =  adcVal * 330 * 2 >> 16;
 		if(markBackFromOtherUI) {
@@ -219,7 +204,6 @@ struct history {
 
 void columsDataCollect_Export(){
 	if(systemSto.data.NumDataCollected.uint_16 != 0)
-//	if(1)
 	{
 		if(colums_StrSelect(true, SEL_2, "通过串口", 1, "导出数据？")) {
 			uint32_t timeCounter = HAL_GetTick();
@@ -239,6 +223,8 @@ void columsDataCollect_Export(){
 			usb_printf("| --------------- | ----- | ----- |\r\n");
 
 			DateTime dt(getEEPROMData_DateTime(&systemSto.data.dtStartCollect));
+
+			ee24.exchangeI2CPins();
 			for(uint16_t i = 0; i <= systemSto.data.NumDataCollected.uint_16; i++) {
 				if(i <  systemSto.data.NumDataCollected.uint_16) {
 					uint8_t data[4] = {0};
@@ -272,6 +258,7 @@ void columsDataCollect_Export(){
 					u8g2.sendBuffer();
 				}
 			}
+			ee24.recoverI2CPins();
 			timeCounter = HAL_GetTick()- timeCounter;
 			u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese); //12x12 pixels
 			u8g2.drawUTF8(x, y + 32, "导出完成！");
@@ -371,11 +358,13 @@ void columsDataCollect_ScheduleDelete(){
 //清除记录
 void columsDataCollect_CollectedDelete(){
 	if(colums_StrSelect(true, SEL_2, nullptr, 1)){
+		ee24.exchangeI2CPins();
 //		不需要擦除，只需要清零采集数量就读不到了
 //		ee24.eraseChip(sizeof(systemStorageType));		//从systemStorageType之后的地址开始擦除剩余所有空间
 		systemSto.data.NumDataCollected.uint_16 = 0;	//清零已采集数量
 
 		ee24.writeBytes(0, systemSto.data.NumDataCollected.ctrl, 2);
+		ee24.recoverI2CPins();
 		systemSto.data.settingsBits[colBits].bits.bit7 = 0;	//任务开关:关闭
 	}
 }
@@ -438,7 +427,10 @@ uint32_t getEEPROM_FreeSize(){
 	 DBG_PAGE_PRINT("a = %d, b = %d, c = %d\r\n",a,b,c);
 	 return c;
 #else
-	 return ee24.getMemSizeInByte() - sizeof(systemStorageType);
+	 ee24.exchangeI2CPins();
+	 uint32_t FreeSize = ee24.getMemSizeInByte() - sizeof(systemStorageType);
+	 ee24.recoverI2CPins();
+	 return FreeSize;
 #endif
 }
 
@@ -594,9 +586,7 @@ void colum_FuncNull() {
  *  亮度为1仍有亮度，为0则熄屏
  */
 void columsScreenSettings_Brightness() {
-	screenBrightness.upper = systemSto.data.ScreenBrightness;
-	*screenBrightness.val = screenBrightness.upper;
-	Contrast_Set(*screenBrightness.val);
+	Contrast_Init();
 }
 
 
@@ -723,6 +713,15 @@ void columsHome_Reset()
 	}
 }
 
+void drawLogoAndVersion()
+{
+	//第一页
+//	u8g2.drawdrawXBM();
+	u8g2.drawBitmap(0, 17, startLogo_H, startLogo_W, startLogo_SAU_G0);
+	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
+	u8g2.drawStr(42, 39 , "v1.0");
+}
+
 void columsHome_ShowVerInfo() {
 	u8g2.clearBuffer();
 	drawLogoAndVersion();
@@ -736,10 +735,13 @@ void columsHome_ShowVerInfo() {
 		waitingSelect(SEL_3);
 	}
 }
+
+
 void synchronisedTimeSys(){
 	synchronisedUintDateTime(&dtSys);
 }
 void synchronisedUintDateTime(uintDateTime * udt){
+	DateTime now = RTC_GetNowDateTime();
 	udt->yOff = now.year() - 2000;
 	udt->m = now.month();
 	udt->d = now.day();

@@ -20,7 +20,13 @@
 RTC_PCF212x rtc;
 DateTime now;	//now变量即作为打印时间的变量，也作为串口修改的时间字符串存储的变量
 
+DateTime& RTC_GetNowDateTime(){
+	return now;
+}
 
+uint8_t RTC_GetNowSceond(){
+	return now.second();
+}
 
 void RTC_Init()
 {

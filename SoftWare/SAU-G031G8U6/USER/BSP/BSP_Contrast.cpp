@@ -54,6 +54,24 @@ void Contrast_Brighten() {
 	}
 }
 
+/**
+  * @brief  初始化对比度（即OLED亮度），需要事先载入EEPROM数据以获取亮度
+  * @param  None
+  * @retval None
+  */
+void Contrast_Init(){
+	//从Flash载入屏幕亮度为screenBrightness的最大值
+	//woc,那这里德国烙铁写错了
+	screenBrightness.upper = systemSto.data.ScreenBrightness;
+	*screenBrightness.val = screenBrightness.upper;
+	Contrast_Set(*screenBrightness.val);	//这个时候*val还是0
+}
+
+/**
+  * @brief  更新对比度（即OLED亮度）
+  * @param  FunPtr 对比度为0时执行的函数
+  * @retval None
+  */
 void Contrast_Update(void (*FunPtr)(void)){
 	//超时熄屏
 	if (firstScreenBright

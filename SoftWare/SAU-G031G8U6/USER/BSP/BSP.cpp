@@ -6,7 +6,7 @@
  */
 
 #include "BSP.h"
-
+#include "oled_init.h"
 
 /* 非阻塞下等待固定的时间
  * @param timeOld 必须传入局部静态变量或全局变量

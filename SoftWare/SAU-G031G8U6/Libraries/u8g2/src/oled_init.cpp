@@ -10,7 +10,18 @@
 #include "oled_init.h"
 #include "main.h"
 
+
 U8G2_SSD1306_128X32_UNIVISION_HW_I2C u8g2(U8G2_R0);
+
+
+void OLED_Init(void){
+	u8g2.begin();
+	u8g2.setDisplayRotation(U8G2_R2);
+	u8g2.setDrawColor(1);
+	u8g2.setBitmapMode(0);	//0是无色也覆盖下层的bitmap，无需u8g2.clearBuffer();
+	u8g2.clearBuffer();
+}
+
 
 uint8_t u8x8_stm32_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
