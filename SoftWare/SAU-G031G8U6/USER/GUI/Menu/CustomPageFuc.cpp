@@ -160,7 +160,7 @@ struct history {
 			sprintf(buf, "%3d%%", ((battVoltageX100 - batVoltage0) * 100) / (batVoltage100 - batVoltage0));
 			u8g2.drawUTF8(x + 31, y + 16, buf);
 			memset(buf, 0, strlen(buf));
-			sprintf(buf, "%1d", (uint16_t)adcVal);
+			sprintf(buf, "%5d", (uint16_t)adcVal);
 			u8g2.drawUTF8(x + 24, y + 32, buf);
 
 			/*电压映射到遮挡矩形的宽度*/
