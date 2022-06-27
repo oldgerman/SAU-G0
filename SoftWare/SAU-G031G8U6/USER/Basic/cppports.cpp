@@ -34,8 +34,7 @@ void setup(){
 	Power_Init();
 #if 1
 //主线程序
-	ee24.autoInit(false);
-	restoreSettings(); 	//恢复设置
+	bool checkVersion = restoreSettings(); 	//恢复设置
 	OLED_Init();		//U8g2初始化OLED
 	Contrast_Init();
 	GUI_Init();
@@ -44,6 +43,11 @@ void setup(){
 	TH_Init();
 	IMU_Init();
 	ADC_Init();
+
+	if(firstPwrOffToRUN == true || checkVersion == false){
+		firstPwrOffToRUN = false;
+		selfCheck();
+	}
 
     /*任务注册*/	//子任务里放for(;;)会阻塞其他任务//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
     mtmMain.Register(GUI_Update, 20);                	//25ms：屏幕刷新
@@ -65,11 +69,11 @@ void setup(){
 		ee24.exchangeI2CPins();
 		Debug_deviceSize = ee24.determineMemSize();
 		Debug_pageSize =  ee24.determinePageSize();
-		int i = 0;
-		ee24.recoverI2CPins();
-		Debug_deviceSize = ee24.determineMemSize();
-		Debug_pageSize =  ee24.determinePageSize();
-		i = 0;
+//		int i = 0;
+//		ee24.recoverI2CPins();
+//		Debug_deviceSize = ee24.determineMemSize();
+//		Debug_pageSize =  ee24.determinePageSize();
+//		i = 0;
 	}
 #elif 0
 	for(;;)
@@ -113,9 +117,9 @@ void loop(){
 
 void MIX_Update()
 {
+
 //	IMU_Update();	//合并到screenBrightAdj()
 	TH_Update();
-
 	/*
 	 * 如果intFromRTC由中断回调函数修改为TRUE，说明RTC中断产生
 	 * 直到AHT20完成测量既th_MeasurementUpload为true时，才执行loopDataCollect()

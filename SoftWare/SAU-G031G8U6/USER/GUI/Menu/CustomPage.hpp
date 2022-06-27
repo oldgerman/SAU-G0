@@ -32,6 +32,7 @@ void columsAccessibility_Battery();
 void columsDateTime_ChangeDateTime();
 void columsDataCollected_Schedule();
 void drawLogoAndVersion();
+void drawVerInfo();
 void columsHome_ShowVerInfo();
 void columsDataCollect_ScheduleSetting_NumDataOneDay();
 void columsDataCollect_ScheduleSetting_NumDataWillCollect();
@@ -50,6 +51,9 @@ void columsAccessibility_RunTime();
 void synchronisedUintDateTime(uintDateTime * udt);
 void synchronisedTimeStartCollect();
 void synchronisedTimeSys();
+void drawEEPROMInfo();
+void columsAccessibility_EXTStorage();
+void drawSlaveDeviceInfo();
 
 typedef struct num_X4 {
 	uint8_t num3;

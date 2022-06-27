@@ -89,6 +89,7 @@ std::vector<Colum> columsScreenOffAndWKUP = {
 //辅助功能
 std::vector<Colum> columsAccessibility = {
 		Colum("扫描设备", 	columsAccessibility_I2CScaner, LOC_ENTER),
+		Colum("检测储存", 	columsAccessibility_EXTStorage, LOC_ENTER),
 		Colum("电池", 	columsAccessibility_Battery, LOC_ENTER),	//各种模式的运行时间 也在里面统计
 		Colum("运行时间", columsAccessibility_RunTime),
 		Colum("重启", 		columsHome_Reset, LOC_ENTER),

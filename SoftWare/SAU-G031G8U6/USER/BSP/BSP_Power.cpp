@@ -15,6 +15,7 @@
 #include "dma.h"
 #include "i2c.h"
 #include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 #include "cppports.h"	//提供setup()
@@ -33,13 +34,14 @@ void STOP1_to_RUN(){
 	//中断使退出STOP模式，在此处继续执行代码
 	SystemClock_Config();
 	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_USART2_UART_Init();
-	MX_DMA_Init();
-	MX_SPI1_Init();
-	MX_I2C2_Init();
-	MX_I2C1_Init();
-	MX_ADC1_Init();
+	  MX_GPIO_Init();
+	  MX_USART2_UART_Init();
+	  MX_DMA_Init();
+	  MX_SPI1_Init();
+	  MX_I2C2_Init();
+	  MX_I2C1_Init();
+	  MX_ADC1_Init();
+	  MX_TIM1_Init();
 	/* USER CODE BEGIN 2 */
 	//解锁I2C
 	FRToI2CxSInit();
@@ -50,7 +52,7 @@ void STOP1_to_RUN(){
 /*
  * @breif 打开主电源MOS函数
  */
-static void powerOn() {
+void powerOn() {
 	HAL_GPIO_WritePin(PW_HOLD_GPIO_Port, PW_HOLD_Pin, GPIO_PIN_SET);
 }
 
@@ -71,8 +73,8 @@ bool powerOffDetect(uint16_t ms) {
 				== GPIO_PIN_RESET) {
 			powerOffDetect_tickSum += 100;
 		} else {
-			powerOffDetect_tickSum -= 100;
-			if (powerOffDetect_tickSum < 0)
+//			powerOffDetect_tickSum -= 100;
+//			if (powerOffDetect_tickSum < 0)
 				powerOffDetect_tickSum = 0;
 		}
 	}else
@@ -130,6 +132,7 @@ static void STOP1_GPIO_Config(void)
 #define KEY_B_Pin GPIO_PIN_4
 #define DISP_RES_Pin GPIO_PIN_5
 #define PW_HOLD_Pin GPIO_PIN_6		//不能动它，STOP1加速度计中断唤醒
+#define RGB_LED_Pin GPIO_PIN_8
 #define SCL2_Pin GPIO_PIN_11
 #define SDA2_Pin GPIO_PIN_12
 #define DISP_CS_Pin GPIO_PIN_15
@@ -145,7 +148,7 @@ static void STOP1_GPIO_Config(void)
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
 	/*Configure GPIOA pins of GPIO_MODE_ANALOG + GPIO_NOPULL*/
-	GPIO_InitStruct.Pin = KEY_A_Pin|KEY_B_Pin|DISP_RES_Pin
+	GPIO_InitStruct.Pin = KEY_A_Pin|KEY_B_Pin|DISP_RES_Pin|RGB_LED_Pin
 			|DISP_CS_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -186,14 +189,19 @@ static void STOP1_GPIO_Config(void)
 static void Power_EnterLowPowerMode()
 {
 	STOP1_GPIO_Config();
-
 	/*关外设*/
 	HAL_ADC_DeInit(&hadc1);	//会执行HAL_DMA_DeInit对应的通道
 	HAL_I2C_DeInit(&hi2c1);
 	HAL_I2C_DeInit(&hi2c2);
 	HAL_SPI_DeInit(&hspi1);
 	HAL_UART_DeInit(&huart2);
-
+//	HAL_ADC_MspDeInit(&hadc1);
+//	HAL_I2C_MspDeInit(&hi2c1);
+//	HAL_I2C_MspDeInit(&hi2c2);
+//	HAL_SPI_MspDeInit(&hspi1);
+//	HAL_UART_MspDeInit(&huart2);
+	HAL_TIM_Base_MspDeInit(&htim1);//关闭TIM1和TIM1的DMA通道
+	//根据低功耗设计配置GPIO状态
 	/*进STOP模式*/
 	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);//WFI(等待中断)、WFE(等待事件)
 }
@@ -242,14 +250,22 @@ void Power_Shutdown()
 void Power_AutoShutdownUpdate()
 {
 	//在执行关机函数前判断最近一次RTC中断是否马上来临(防止进入STOP1时中断来临却得不到响应)，若是则阻止进入休眠
-	if(!RTC_AlarmWillTrigger())
+//	if(!RTC_AlarmWillTrigger())
 	{
 		if(powerOffDetect(swPressedTimeshutDown) == false)
 			Contrast_Update(Power_Shutdown);
-	}else{
-		Contrast_Update(nullptr);
 	}
+//	else{
+//		Contrast_Update(nullptr);
+//	}
 }
 
-
+/**
+ * @brief  是否在充电
+ * @param  None
+ * @retval bool
+ */
+bool Power_IsCharging(){
+	return !HAL_GPIO_ReadPin(CHARGE_DETECT_GPIO_Port, CHARGE_DETECT_Pin);
+}
 

@@ -74,6 +74,8 @@ void Error_Handler(void);
 #define KEY_OK_Pin GPIO_PIN_1
 #define KEY_OK_GPIO_Port GPIOB
 #define KEY_OK_EXTI_IRQn EXTI0_1_IRQn
+#define RGB_LED_Pin GPIO_PIN_8
+#define RGB_LED_GPIO_Port GPIOA
 #define CHARGE_DETECT_Pin GPIO_PIN_6
 #define CHARGE_DETECT_GPIO_Port GPIOC
 #define SCL2_Pin GPIO_PIN_11

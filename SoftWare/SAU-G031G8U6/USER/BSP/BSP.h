@@ -27,9 +27,11 @@ void usb_printf(const char *format, ...);
 void usb_printf_IT(const char *format, ...);
 #endif
 
-void BSPInit(void);
+extern bool firstPwrOffToRUN;
+void preSetupInit(void);
+void selfCheck();
 void resetWatchdog();
-void FRToI2CxSInit(); //释放信号量以解锁I2C
+void FRToI2CxSInit();
 void unstick_I2C(I2C_HandleTypeDef *);
 bool waitTime(uint32_t *timeOld, uint32_t wait);
 /*ADC*/
@@ -47,6 +49,8 @@ void TH_Update();
 bool TH_DataUpdated();
 int16_t TH_GetDataC_X10();
 uint8_t TH_GetDataRH_X1();
+/*RGB*/
+void RGB_Update();
 /*Contrast*/
 void Contrast_Init();
 void Contrast_SetVal();
@@ -56,8 +60,10 @@ void Contrast_Brighten();
 /*PWR*/
 bool shouldBeSleeping();
 bool powerOffDetect(uint16_t ms);
+void powerOn();
 void Power_Init();
 void Power_AutoShutdownUpdate();
+bool Power_IsCharging();
 void STOP1_to_RUN();
 extern bool recoverFromSTOP1;
 /*USART*/

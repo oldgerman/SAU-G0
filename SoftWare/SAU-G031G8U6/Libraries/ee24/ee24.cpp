@@ -51,7 +51,7 @@ void EE24::autoInit(bool autoDetermine){
 		_addrBitAndMem =  0x1ffff;
 	}
 
-	if((_sizeMemKbit * 128) >= I2C_DEVICESIZE_24LC32)
+	if((_sizeMemKbit) >= I2C_DEVICESIZE_24LC32)
 		_memAddSize = I2C_MEMADD_SIZE_16BIT;
 	else
 		_memAddSize = I2C_MEMADD_SIZE_8BIT;
@@ -219,7 +219,7 @@ bool EE24::eraseChip(uint32_t bytes)
 
 
 // 检测容量，
-// 测试的地址写入会破坏原先位置的数据，建议对空片使用本函数
+// 会在函数内修改EEPROM内部2^n地址的1byte数据做循环检测，退出函数时修改的数据会一一还原
 // returns size in bytes
 // returns 0 if not connected
 //
@@ -258,19 +258,26 @@ uint32_t EE24::determine_memsize()
 	 * ......
 	 */
 	uint32_t size;
-	uint32_t sizePrev = 0;
-	uint32_t sizeLater = 0;
 	bool folded;
 
 	for(int j = 0; j < 2; j++){
+		/* 对于MemSize为8bit的24Cxx型号j为0时就检测到折叠return size了，不会用I2C_MEMADD_SIZE_16BIT继续检测
+		 * 对于MemSize为16bit的24Cxx型号j为0时就以MemSize 8bit检测,情况变得令人困惑：
+		 * 		调用写操作的1byte函数时，传入的1byte data会被24Cxx识别为MemAddr的LSB，相当于没有写入任何东西
+		 * 		调用读操作的1byte函数时，从设备返回什么数据是未定义的
+		 * 		虽然无法知道读操作会发生什么，但可以确信这种情况的写操作不会更改EEPROM数据，
+		 * 		因此可以说运行本函数虽然中途会修改数据，但结束时修改的数据会一一还原
+		 */
+
 		if(j == 1)
 			_memAddSize = I2C_MEMADD_SIZE_16BIT;
 
 		for (size = 128; size <= 65536; size *= 2)
 		{
 			folded = false;
-//			uint8_t buf;
-//			readByte(size,&buf);		//去读地址指针=size处地址的1byte值，临时存起来
+
+			uint8_t buf;
+			readByte(size,&buf);		//去读地址指针=size处地址的1byte值，临时存起来
 
 			// test folding 测试折叠
 			uint8_t cnt = 0;			//统计页的大小，以byte为单位
@@ -279,7 +286,7 @@ uint32_t EE24::determine_memsize()
 			uint8_t readBuffer;
 			readByte( 0, &readBuffer);
 
-			if (readBuffer == pat55) cnt++;	//如果首地址的值与写入的值相同，说明地址指针溢出后回到第一页地址， 第一页之前的数据将被覆盖，不过没关系，我们事先存了副本到buf中
+			if (readBuffer == pat55) cnt++;	//如果首地址的值与写入的值相同，说明地址指针溢出后回到第一页地址， 第一页之前的数据将被覆盖
 			writeByte(size, &patAA); 		//对size地址继续写入 1010,1010，地址指针会自增吗？
 
 			readByte( 0,  &readBuffer);
@@ -289,31 +296,12 @@ uint32_t EE24::determine_memsize()
 
 			readByte(size, &readBuffer);
 			DBG_EE24("size = %d,read address size: %d  ", size, readBuffer);
-//			writeByte(size, &buf); // restore old values	//恢复原有的数据，也就是说这个测试不会破坏原有的数据，但对8bit地址指针使用16bit搞不一定
-			if (folded) {
-				return size;
-				if(j == 0) {
-					if(size > 65535) size = 0;	//说明16bit地址指针溢出
-					sizePrev = size;
-				}else{ //j == 1
-					if(size > 65535) size = 0;	//说明16bit地址指针溢出
-					sizeLater = size;
-				}
-			}
-		}
-	}
 
-	//如果至少一个size非零, 那肯定发生了折叠，可以确定地址值位数
-	if(sizePrev | sizeLater){
-		if(sizePrev < sizeLater) {
-			_memAddSize = I2C_MEMADD_SIZE_16BIT;
-			size = sizeLater;
+			writeByte(size, &buf); // restore old values	//恢复原有的数据，这个测试不会破坏原有的数据
+
+			if (folded)
+				return size;
 		}
-		else {
-			_memAddSize = I2C_MEMADD_SIZE_8BIT;
-			size = sizePrev;
-		}
-		return size / 128;	//以Kbit单位返回，例如24C128返回128
 	}
 	return 0;
 }
@@ -322,31 +310,33 @@ uint32_t EE24::determine_memsize()
 //   24LC1024     128 KB    待测试
 uint32_t EE24::determineMemSize()
 {
-	uint32_t size = determine_memsize();
-	if(size == I2C_DEVICESIZE_24LC512){
+	uint32_t sizeKbit = determine_memsize()/128;
+	if(sizeKbit == I2C_DEVICESIZE_24LC512){
 		uint8_t devAddrOld = _devAddress;
 		_devAddress = _devAddress | 0x2; //更改P0位以检测24C1024
 		if(determine_memsize() == I2C_DEVICESIZE_24LC512)
-			size = I2C_DEVICESIZE_24LC1024;
+			sizeKbit = I2C_DEVICESIZE_24LC1024;
 		_devAddress = devAddrOld;	//还原地址
 	}
-	_sizeMemKbit = size;
-	return size;
+	_sizeMemKbit = sizeKbit;
+	return sizeKbit;
 }
 
 uint16_t EE24::determinePageSize()
 {
-	uint16_t size;
-	// determine page size from device size - based on Microchip 24LCXX data sheets.
-	if (_sizeMemKbit <= I2C_DEVICESIZE_24LC02) size = 8;
-	else if (_sizeMemKbit <= I2C_DEVICESIZE_24LC16) size = 16;
-	else if (_sizeMemKbit <= I2C_DEVICESIZE_24LC64) size = 32;
-	else if (_sizeMemKbit <= I2C_DEVICESIZE_24LC256) size = 64;
-	else if (_sizeMemKbit <= I2C_DEVICESIZE_24LC512) size = 128;
+	uint16_t sizeByte;
+	// determine page sizeByte from device sizeByte - based on Microchip 24LCXX data sheets.
+	if (_sizeMemKbit <= I2C_DEVICESIZE_24LC02) sizeByte = 8;
+	else if (_sizeMemKbit <= I2C_DEVICESIZE_24LC16) sizeByte = 16;
+	else if (_sizeMemKbit <= I2C_DEVICESIZE_24LC64) sizeByte = 32;
+	else if (_sizeMemKbit <= I2C_DEVICESIZE_24LC256) sizeByte = 64;
+	else if (_sizeMemKbit <= I2C_DEVICESIZE_24LC512) sizeByte = 128;
 	// I2C_DEVICESIZE_24LC1024
-	else size = 256;
-	_sizePageByte = size;
-	return size;
+	else sizeByte = 256;
+
+	if(_sizeMemKbit == 0) sizeByte = 0;
+	_sizePageByte = sizeByte;
+	return sizeByte;
 }
 
 

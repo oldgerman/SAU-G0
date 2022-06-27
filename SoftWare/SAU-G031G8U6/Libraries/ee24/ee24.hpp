@@ -30,6 +30,9 @@
 		打包到 class EE24 中
 	2022/05/2?
 		将宏定义的EEPROM容量大小、I2C地址、页大小改为变量，可以在我的Page-Colum类实现的多级菜单里配置
+	2022/0627
+		修复容量检测相关函数的 Kbit Byte单位换算BUG
+		验证EE24::determine_memsize()结束时会还原检测时修改的数据
 */
 
 #ifndef	_EE24_HPP
@@ -55,14 +58,9 @@ extern uint8_t exChangeI2C1Pins;
 #ifdef __cplusplus
 class EE24{
 public:
-//	EE24(I2C_HandleTypeDef *hi2c,
-//			uint8_t i2cAddr = _EEPROM_ADDRESS,
-//			uint32_t timeOut = 100
-//		)
-//		:_hi2c(hi2c),
-//		 _i2cAddr(i2cAddr),
-//		 _timeout(timeOut)
-//		{}
+	EE24(I2C_HandleTypeDef *hi2c, uint8_t i2cAddr, uint32_t timeOut)
+		:_hi2c(hi2c), _sizeMemKbit(0),  _sizePageByte(0), _i2cAddr(i2cAddr), _timeout(timeOut)
+		{}
 
 	EE24(I2C_HandleTypeDef *hi2c, uint32_t sizeMemKbit, uint8_t sizePageByte, uint8_t i2cAddr, uint32_t timeOut)
 		:_hi2c(hi2c), _sizeMemKbit(sizeMemKbit),  _sizePageByte(sizePageByte), _i2cAddr(i2cAddr), _timeout(timeOut)
@@ -157,7 +155,9 @@ public:
 	uint16_t determinePageSize();
 	uint16_t getPageSizeInByte() { return _sizePageByte; }
 	uint16_t getMemSizeInKbit()  { return _sizeMemKbit; }
-	uint16_t getMemSizeInByte()  { return _sizeMemKbit * 128; }
+	uint32_t getMemSizeInByte()  { return _sizeMemKbit * 128; }
+	void setMemSizeInKbit(uint16_t sizeMemKbit)  { _sizeMemKbit = sizeMemKbit; }
+	void setPageSizeInByte(uint16_t sizePageByte) { _sizePageByte = sizePageByte; }
 private:
 	void 				exc_I2C_Init();
 	void 				exc_I2C_DeInit();

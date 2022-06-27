@@ -21,12 +21,10 @@ extern "C" {
 extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 
 /* 默认设置值 */
-#define Sec24H		86400		//一天的秒数
+#define Sec24H		86400U		//一天的秒数
 //固件版本
-#define FW_VERSION_yOff 22U		// 2022
-#define FW_VERSION_m 6U		// 06
-#define FW_VERSION_d 3U		// 01
-#define FW_VERSION_v 10U		// 10 版本号v1.0
+#define FW_VERSION_INTEGER 1U
+#define FW_VERSION_DECIMAL 0U
 //数据采集
 	//待补充
 //日期时间：%Y-%m-%d %H:%M:%S  yyyy-mm-dd hh:mm:ss  2018-02-21 12:00:00
@@ -47,12 +45,9 @@ extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 #define sysBits 0
 #define colBits 1
 typedef struct fw_version {
-	uint8_t yOff;
-	uint8_t m;
-	uint8_t d;
-	uint8_t v;
+	uint8_t integer;
+	uint8_t decimal;
 }fwVersionType;
-
 
 struct settings_Bits{
 	uint8_t bit0 	:1;
@@ -81,6 +76,9 @@ struct orgData{
 	byteX2Type NumDataCollected;	// 已采集的数据组个数(也用于下次写EEPROM地址的指针偏移)，放在第一个好操作
 	//版本信息
 	fwVersionType FWversion;
+	//EEPPROM信息
+	uint16_t EE24_sizeMemKbit;
+	uint8_t  EE24_sizePageByte;
 	//累计运行时间
 	uint32_t TimeRUN;				// 累计运行时间--RUN
 	uint32_t TimeLPW_RUN;			// 累计运行时间--LPW_RUN

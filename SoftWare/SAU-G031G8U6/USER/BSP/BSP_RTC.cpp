@@ -7,6 +7,7 @@
 
 #include "BSP.h"
 #include  "RTClib.h"
+#include "CustomPage.hpp"
 
 #ifndef DBG_PRINT_RTC
 #if 0  //< Change 0 to 1 to open debug macro and check program debug information
@@ -17,11 +18,11 @@
 #endif
 
 /*
- *	判断RTC闹钟中断即将来临为ture而进行比较的最小时间，单位s,
+ *	判断RTC闹钟中断即将来临为ture而进行比较的最小时间，单位s
  *	这时间由"估计长按电源键进入休眠模式的时间"和"估计按电源键从休眠模式唤醒到开始任务调度的时间"相加得到
  *	关于这个时间如何取，请见我写的《低功耗设计笔记》的 "估计长按电源键进入休眠模式的时间" 和 "估计按电源键从休眠模式唤醒到开始任务调度的时间" 部分
  */
-#define RTC_AlarmWillTrigger_MiniumSecond 5;
+const uint8_t RTC_AlarmWillTrigger_MiniumSecond = 5;
 
 RTC_PCF212x rtc;
 DateTime now;	//now变量即作为打印时间的变量，也作为串口修改的时间字符串存储的变量

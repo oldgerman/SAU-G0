@@ -49,6 +49,8 @@ void GUI_Init() {
 
 
 void GUI_Update() {
+	Power_AutoShutdownUpdate();	//从STOP模式退出，在此处继续执行
+
 	//一些标记变量用于按键状态锁定，因为主屏进入菜单是长按中键，菜单返回主屏也是长按中键
 	static bool markBackFromMenu = false;
 	static ButtonState oldButtons;
@@ -93,8 +95,6 @@ void GUI_Update() {
 			break;
 		}
 	}
-
-	Power_AutoShutdownUpdate();	//从STOP模式退出，在此处继续执行
 
 	//绘制温湿度信息
 	if (TH_DataUpdated() || sysPowerOn || markBackFromMenu) {

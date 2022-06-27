@@ -26,7 +26,6 @@ const char *strI2cInfo[] = {
 //版本信息第二页字符串
 const char *strVerInfo[] = {
 	"SAU-G031",
-	"<A>v1.0", // Print version number
 	__DATE__,
 	__TIME__,	// 编译日期
 	"github.com/",
@@ -113,11 +112,13 @@ struct history {
 	uint8_t xBitmap = 4;
 	history<uint16_t, 20> adcFilter= {{0}, 0, 0};
 	uint32_t timeOld = HAL_GetTick();
+	uint32_t timeOld_RGB = HAL_GetTick();
 	uint8_t usage = 0;
 	bool markBackFromOtherUI = true;
 	ButtonState oldButtons = buttons;
 	for (;;) {
 		Power_AutoShutdownUpdate();
+
 		/*读取电池电压*/
 		adcFilter.update(ADC_Get());
 		uint32_t adcVal = adcFilter.average();
@@ -137,8 +138,10 @@ struct history {
 				break;
 			}
 		}
-		//每500ms更新一次显示
-		if(waitTime(&timeOld, 500)) {
+		if(waitTime(&timeOld_RGB,20))
+			RGB_Update();
+		//每200ms更新一次显示
+		if(waitTime(&timeOld, 200)) {
 			u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese); //12x12 pixels
 			u8g2.clearBuffer();
 			u8g2.drawBitmap(xBitmap, yBitmap, iconBattery_CNT, iconBattery_H,
@@ -157,13 +160,12 @@ struct history {
 			sprintf(buf, "%3d%%", ((battVoltageX100 - batVoltage0) * 100) / (batVoltage100 - batVoltage0));
 			u8g2.drawUTF8(x + 31, y + 16, buf);
 			memset(buf, 0, strlen(buf));
-			sprintf(buf, "%d", (uint16_t)adcVal);
+			sprintf(buf, "%1d", (uint16_t)adcVal);
 			u8g2.drawUTF8(x + 24, y + 32, buf);
-			/*是否充电*/
-			bool Is_BattCharging = HAL_GPIO_ReadPin(CHARGE_DETECT_GPIO_Port, CHARGE_DETECT_Pin);
+
 			/*电压映射到遮挡矩形的宽度*/
 			uint8_t symIndex = map(battVoltageX100, batVoltage0, batVoltage100, 4 ,0);
-			if(Is_BattCharging)
+			if(Power_IsCharging())/*是否充电*/
 			{
 				usage++;
 				usage %= (symIndex + 1);//至少一个电量格
@@ -695,31 +697,35 @@ void columsAccessibility_I2CScaner() {
 }
 
 //重启
-void columsHome_Reset()
-{
-	bool ok = colums_StrSelect(true, SEL_2, nullptr, 1);
-	if(ok)
-	{
-//		shutScreen();
-//		uint16_t timeWaitingStartPage = HAL_GetTick();
-//		for (;;) {
-//			if (HAL_GetTick() - timeWaitingStartPage > 666)
-//				break;
-//			resetWatchdog();
-//			HAL_Delay(MENU_DELAY);
-//		}
-
-		NVIC_SystemReset();
-	}
-}
-
 void drawLogoAndVersion()
 {
 	//第一页
 //	u8g2.drawdrawXBM();
 	u8g2.drawBitmap(0, 17, startLogo_H, startLogo_W, startLogo_SAU_G0);
 	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
-	u8g2.drawStr(42, 39 , "v1.0");
+//	u8g2.drawStr(42, 39 , "v1.0");
+}
+
+
+
+void columsHome_Reset()
+{
+	if(colums_StrSelect(true, SEL_2, nullptr, 1))
+		NVIC_SystemReset();
+}
+
+void drawVerInfo() {
+	u8g2.clearBuffer();
+	for (int i = 0, j = 0; i < 5; i++){
+		if(i==1){
+			char buf[20] = {0};
+			sprintf(buf, "<A>v%d.%d", systemSto.data.FWversion.integer, systemSto.data.FWversion.decimal);
+			u8g2.drawStr(0, 8 + i * 8, buf);
+			++j;
+		}
+		u8g2.drawStr(0, 8 + (i+j) * 8, strVerInfo[i]);
+	}
+	u8g2.sendBuffer();
 }
 
 void columsHome_ShowVerInfo() {
@@ -728,10 +734,7 @@ void columsHome_ShowVerInfo() {
 	u8g2.sendBuffer();
 	if (waitingSelect(SEL_3)) {
 		//第二页
-		u8g2.clearBuffer();
-		for (int i = 0; i < 6; i++)
-			u8g2.drawStr(0, 8 + i * 8, strVerInfo[i]);
-		u8g2.sendBuffer();
+		drawVerInfo();
 		waitingSelect(SEL_3);
 	}
 }
@@ -755,4 +758,49 @@ void synchronisedTimeStartCollect(){
 			systemSto.data.NumDataCollected.uint_16 == 0) {	//且已采集的数据为0组
 		synchronisedUintDateTime(&systemSto.data.dtStartCollect);
 	}
+}
+
+
+void drawEEPROMInfo(){
+	u8g2.clearBuffer();
+	u8g2.setDrawColor(1);
+	u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
+
+	uint8_t y = 13;
+	char buf[15] = {0};
+	sprintf(buf, "24C%02d", ee24.getMemSizeInKbit());
+	u8g2.drawUTF8(1, y, buf);
+	y+=16;
+	memset(buf, 0, strlen(buf));
+	sprintf(buf, "B: %5ld", ee24.getMemSizeInByte());
+	u8g2.drawUTF8(1, y, buf);
+	y+=16;
+	memset(buf, 0, strlen(buf));
+	sprintf(buf, "P: %5d", ee24.getPageSizeInByte());
+	u8g2.drawUTF8(1, y, buf);
+
+	u8g2.sendBuffer();
+}
+/*
+ * @brief 检查EEPROM大小
+ * @note  检测容量的函数会篡改EEPEOM一定的字节(以2^n迭代EEPEOM地址指针测试)，在菜单页内执行此函数不会影响系统设置字节，但可能篡改采集的数据字节
+ * @param None
+ */
+void columsAccessibility_EXTStorage(){
+	if(colums_StrSelect(true, SEL_2, nullptr, 1)){
+
+#if _EEPROM_EXC_PINS
+	ee24.exchangeI2CPins();
+#endif
+	ee24.autoInit(true);
+#if _EEPROM_EXC_PINS
+	ee24.recoverI2CPins();
+#endif
+	drawEEPROMInfo();
+	waitingSelect(SEL_3);
+	}
+}
+
+void drawSlaveDeviceInfo(){
+	;
 }

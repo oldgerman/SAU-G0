@@ -18,7 +18,8 @@
 systemStorageType systemSto;
 //日期时间，不存储在EEPROM
 uintDateTime dtSys;
-EE24 ee24(&hi2c1, 2, 8, _EEPROM_ADDRESS, 100);
+EE24 ee24(&hi2c1, 512, 128, _EEPROM_ADDRESS, 100);
+
 void saveSettings() {
 //	if(ee24_isConnected())
 #if _EEPROM_EXC_PINS
@@ -30,29 +31,34 @@ void saveSettings() {
 #endif
 }
 
+bool  checkFWversion(){
+	if((systemSto.data.FWversion.integer == FW_VERSION_INTEGER) && (systemSto.data.FWversion.decimal == FW_VERSION_DECIMAL))
+		return true;
+	return false;
+}
 /*将Flash settings_page区的值读给RAM中的systemSto.data，用于恢复设置值*/
 bool restoreSettings() {
-#if	0
-	// if the version is correct were done
-	if (systemSto.data.FWversion != FW_VERSION) {
-		resetSettings();
-		resetWatchdog();
-		saveSettings();
-		return true;
-	}
-	else
-		return false
-#else
-//	if(ee24_isConnected())
 #if _EEPROM_EXC_PINS
 	ee24.exchangeI2CPins();
 #endif
-	ee24.readBytes(0, systemSto.ctrl, sizeof(systemStorageType));
+	//如果是从STOP1模式恢复，那么RAM还维持着数据，若读取失败，则RAM中的数据不会变化，无法得知eeprom状态。因此加入一个ret检测是否读取失败
+	bool ret = ee24.readBytes(0, systemSto.ctrl, sizeof(systemStorageType));
 #if _EEPROM_EXC_PINS
 	ee24.recoverI2CPins();
 #endif
+	// if the version is correct were done
+	if (ret && checkFWversion()) {
+		return true;
+	}
+	else{
+		resetSettings();
+		saveSettings();
+		//归零EEPROM容量信息
+		ee24.setMemSizeInKbit(0);
+		ee24.setPageSizeInByte(0);
+		return false;
+	}
 	return true;
-#endif
 }
 
 void resetDataCollectSettings(){
@@ -86,11 +92,10 @@ void resetDataCollectSettings(){
 void resetSettings() {
 //	memset((void *)&systemSto.ctrl, 0, sizeof(systemStorageType));
 
-	systemSto.data.FWversion.yOff 		= FW_VERSION_yOff;
-	systemSto.data.FWversion.m 		= FW_VERSION_m;
-	systemSto.data.FWversion.d 		= FW_VERSION_d;
-	systemSto.data.FWversion.v 		= FW_VERSION_v;
-
+	systemSto.data.FWversion.integer = FW_VERSION_INTEGER;
+	systemSto.data.FWversion.decimal = FW_VERSION_DECIMAL;
+	systemSto.data.EE24_sizeMemKbit = 2;
+	systemSto.data.EE24_sizePageByte = 8;
 	dtSys.yOff 		= DATE_TIME_yOff;
 	dtSys.m 		= DATE_TIME_m;
 	dtSys.d			= DATE_TIME_d;
