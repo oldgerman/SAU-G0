@@ -16,9 +16,9 @@ bool firstPwrOffToRUN = true;
  * @return None
  */
 void preSetupInit(void){
-	FRToI2CxSInit();//解锁I2C
 	powerOn();
-
+	FRToI2CxSInit();//解锁I2C
+	delay(200);//等待电压稳定
 #if _EEPROM_EXC_PINS
 	ee24.exchangeI2CPins();
 #endif
@@ -36,12 +36,16 @@ void preSetupInit(void){
  */
 void selfCheck(){
 	drawVerInfo();
+	Contrast_Brighten();
 	HAL_Delay(1000);
 	drawEEPROMInfo();
 	HAL_Delay(1000);
 	drawSlaveDeviceInfo();
 //	HAL_Delay(1000);
 	u8g2.clearBuffer();
+
+	//函数内延迟了，退出时需要重置动作状态倒计时
+	actionStateTime_Reset();
 }
 
 /* 非阻塞下等待固定的时间

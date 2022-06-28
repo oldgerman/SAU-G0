@@ -51,6 +51,7 @@ int16_t TH_GetDataC_X10();
 uint8_t TH_GetDataRH_X1();
 /*RGB*/
 void RGB_Update();
+void RGB_TurnOff();
 /*Contrast*/
 void Contrast_Init();
 void Contrast_SetVal();
@@ -61,6 +62,7 @@ void Contrast_Brighten();
 bool shouldBeSleeping();
 bool powerOffDetect(uint16_t ms);
 void powerOn();
+void actionStateTime_Reset();
 void Power_Init();
 void Power_AutoShutdownUpdate();
 bool Power_IsCharging();

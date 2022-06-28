@@ -29,11 +29,13 @@ uint32_t Debug_deviceSize = 0;
 uint16_t Debug_pageSize =  0;
 
 void setup(){
-	DBG_PRINT("MCU: Initialized.\r\n");
 	/*初始化或从STOP1退出时重置标记*/
 	Power_Init();
 #if 1
 //主线程序
+
+	DBG_PRINT("MCU: Initialized.\r\n");
+	RGB_TurnOff();
 	bool checkVersion = restoreSettings(); 	//恢复设置
 	OLED_Init();		//U8g2初始化OLED
 	Contrast_Init();
@@ -45,11 +47,10 @@ void setup(){
 	ADC_Init();
 
 	//如果是第一次硬复位开机或者eeprom检测版本号失败，那么强制打印自检信息
-	if(firstPwrOffToRUN == true || checkVersion == false){
-		firstPwrOffToRUN = false;
+	if(firstPwrOffToRUN == true || checkVersion == false)
 		selfCheck();
-	}
 
+	firstPwrOffToRUN = false;
     /*任务注册*/	//子任务里放for(;;)会阻塞其他任务//注意调度时间占比，影响主屏幕时间的秒点闪烁周期的平均度
     mtmMain.Register(GUI_Update, 20);                	//25ms：屏幕刷新
     mtmMain.Register(RTC_Update, 100);                 //100ms：RTC监控

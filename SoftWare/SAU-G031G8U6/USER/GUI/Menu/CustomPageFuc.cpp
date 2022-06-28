@@ -117,7 +117,6 @@ struct history {
 	bool markBackFromOtherUI = true;
 	ButtonState oldButtons = buttons;
 	for (;;) {
-		Power_AutoShutdownUpdate();
 
 		/*读取电池电压*/
 		adcFilter.update(ADC_Get());
@@ -141,7 +140,7 @@ struct history {
 		if(waitTime(&timeOld_RGB,20))
 			RGB_Update();
 		//每200ms更新一次显示
-		if(waitTime(&timeOld, 200)) {
+		if(waitTime(&timeOld, 500)) {
 			u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese); //12x12 pixels
 			u8g2.clearBuffer();
 			u8g2.drawBitmap(xBitmap, yBitmap, iconBattery_CNT, iconBattery_H,
@@ -182,6 +181,7 @@ struct history {
 				break;
 		}
 	}
+	RGB_TurnOff();
 }
 
 	/* 第二页
@@ -702,7 +702,7 @@ void drawLogoAndVersion()
 	//第一页
 //	u8g2.drawdrawXBM();
 	u8g2.drawBitmap(0, 17, startLogo_H, startLogo_W, startLogo_SAU_G0);
-	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
+//	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
 //	u8g2.drawStr(42, 39 , "v1.0");
 }
 
@@ -716,6 +716,8 @@ void columsHome_Reset()
 
 void drawVerInfo() {
 	u8g2.clearBuffer();
+	u8g2.setDrawColor(1);
+	u8g2.setFont(u8g2_font_IPAandRUSLCD_tr); //7pixel字体;
 	for (int i = 0, j = 0; i < 5; i++){
 		if(i==1){
 			char buf[20] = {0};

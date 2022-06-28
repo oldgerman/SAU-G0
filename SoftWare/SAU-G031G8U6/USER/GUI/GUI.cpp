@@ -34,7 +34,7 @@ void GUI_Init() {
 
 
 	Contrast_Init();
-	if(systemSto.data.settingsBits[sysBits].bits.bit0){
+	if(systemSto.data.settingsBits[sysBits].bits.bit0 || firstPwrOffToRUN == true){
 		//绘制开机logo
 		drawLogoAndVersion();
 		u8g2.sendBuffer();

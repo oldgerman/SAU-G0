@@ -36,6 +36,11 @@ void RGB_Update(){
 	led_render();
 }
 
+void RGB_TurnOff(){
+	led_set_RGB(0, 0, 0, 0);
+	angle = 0;
+	led_render();
+}
 
 #endif
 

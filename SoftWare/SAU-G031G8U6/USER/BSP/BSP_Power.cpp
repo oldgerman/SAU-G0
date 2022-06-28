@@ -31,6 +31,7 @@ void Power_Shutdown();
  * @retval None
  */
 void STOP1_to_RUN(){
+//	HAL_Init();	//重置HAL tick()
 	//中断使退出STOP模式，在此处继续执行代码
 	SystemClock_Config();
 	/* Initialize all configured peripherals */
@@ -46,6 +47,8 @@ void STOP1_to_RUN(){
 	//解锁I2C
 	FRToI2CxSInit();
 
+	powerOn();	//打开3.3V电源
+	delay(200);//等待电压稳定后配置外挂芯片
 	setup();	//重新初始化所有外挂芯片，因为3.3V断电过
 }
 
@@ -200,7 +203,9 @@ static void Power_EnterLowPowerMode()
 //	HAL_I2C_MspDeInit(&hi2c2);
 //	HAL_SPI_MspDeInit(&hspi1);
 //	HAL_UART_MspDeInit(&huart2);
-	HAL_TIM_Base_MspDeInit(&htim1);//关闭TIM1和TIM1的DMA通道
+
+	//执行会使cSTOP1恢复无法使用TIM1 DMA PWM,不执行不影响
+//	HAL_TIM_Base_MspDeInit(&htim1);//关闭TIM1和TIM1的DMA通道,
 	//根据低功耗设计配置GPIO状态
 	/*进STOP模式*/
 	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);//WFI(等待中断)、WFE(等待事件)
@@ -221,7 +226,16 @@ void Power_Init()
 	/*长按中键一定时间才会使电源保持*/
 	powerOn();
 
-	//强制更新最后一次动作状态时间
+	//
+	actionStateTime_Reset();
+}
+
+/**
+ * @brief  强制更新最后一次动作状态时间
+ * @param  None
+ * @retval None
+ */
+void actionStateTime_Reset(){
 	lastButtonTime = HAL_GetTick() - systemSto.data.SleepTime;
 	lastMovementTime = HAL_GetTick() - systemSto.data.SleepTime;
 }
@@ -236,7 +250,7 @@ void Power_Shutdown()
 	/* USER CODE BEGIN 1 */
 	//在进入STOP1关外设函数前，需要保存的数据在此执行操作
 	//例如更新RUN、LPW_RUN、STOP1的累计时间到EEPROM
-
+	RGB_TurnOff();
 	/* USER CODE END 1 */
 
 	Power_EnterLowPowerMode();
