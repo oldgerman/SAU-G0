@@ -619,13 +619,21 @@ bool FRToSI2C::probe(uint16_t devAddr) {
 	if (!lock())
 		return false;	//返回false，终止本函数
 
-	//若成功获取_I2CSemaphore则执行以下代码
-//	uint8_t buffer[1];
-//	bool worked = HAL_I2C_Mem_Read(_I2C_Handle, devAddr, 0x0F,
-//			I2C_MEMADD_SIZE_8BIT, buffer, 1, 1000) == HAL_OK;
-	bool worked = HAL_I2C_Master_Transmit(_I2C_Handle, devAddr << 1, 0, 0, 200);
-	unlock();
-	return worked;
+//	bool worked = HAL_I2C_Master_Transmit(_I2C_Handle, devAddr, 0, 0, 200);
+
+	HAL_StatusTypeDef result;
+ 	  /*
+ 	   * the HAL wants a left aligned i2c address
+ 	   * (uint16_t)(i<<1) is the i2c address left aligned
+ 	   * retries 2
+ 	   * timeout 200
+ 	   */
+ 	  result = HAL_I2C_IsDeviceReady(_I2C_Handle, devAddr, 2, 200);
+ 		unlock();
+ 	  if (result == HAL_OK) // HAL_ERROR or HAL_BUSY or HAL_TIMEOUT
+ 		  return true;
+
+ 	  return false;
 }
 
 //若I2C1出错会使用此方法终止当前传输, 并重置I2C
@@ -650,6 +658,7 @@ bool FRToSI2C::lock() {
 	mark = (xSemaphoreTake(_I2CSemaphore, (TickType_t)1000) == pdTRUE);
 #else
 	mark = _I2CSemaphore;		//HAL_I2C回调函数执行完毕后，_I2CSemaphore = 1
+//	mark = true;
 #endif
 	return mark;
 }

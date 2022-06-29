@@ -81,8 +81,8 @@ void i2c_scaner(I2C_HandleTypeDef *hi2c, uint8_t i2cBusNum) {
 	HAL_StatusTypeDef status;
 	DBG_PRINT_I2C_SCAN("MCU: i2c%d scan...\r\n",i2cBusNum);
 
-	for (i = 0; i < 127; i++) {
-		status = HAL_I2C_Master_Transmit(hi2c, i << 1, 0, 0, 200);
+	for (i = 0; i < 128; i++) {
+		status = HAL_I2C_IsDeviceReady(hi2c, (uint16_t)(i<<1), 1, 10);
 		if (status == HAL_OK) {
 			DBG_PRINT_I2C_SCAN("addr: 0x%02X is ok\r\n",i);
 		} else if (status == HAL_TIMEOUT) {
@@ -111,6 +111,12 @@ void I2cScan_Update(uint16_t ms) {
 }
 
 void unstick_I2C(I2C_HandleTypeDef * I2C_Handle) {
+	/*
+	 * 检查I2C_Handle
+	 * 对空对象操作会导致非法访问进入HardFault()
+	 */
+	if(I2C_Handle == nullptr)
+		return;
 #if 1
 	GPIO_InitTypeDef GPIO_InitStruct;
 	int              timeout     = 100;

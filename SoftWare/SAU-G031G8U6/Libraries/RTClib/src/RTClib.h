@@ -297,7 +297,10 @@ protected:
 /**************************************************************************/
 class RTC_I2C {
 public:
-	RTC_I2C(uint8_t I2C_ADD):i2cAddr(I2C_ADD){}
+	RTC_I2C(FRToSI2C * PtrFRToSI2C, uint8_t I2C_ADD)
+		:pFRToSI2C(PtrFRToSI2C), i2cAddr(I2C_ADD)
+	{}
+	FRToSI2C * pFRToSI2C;
 	uint8_t i2cAddr;	//RTC I2C 7bit地址左移一位
 	bool ret = 0;			//临时存放I2C API的读写返回状态
 protected:
@@ -316,7 +319,7 @@ protected:
 	static uint8_t bin2bcd(uint8_t val) { return val + 6 * (val / 10); }
 	//  Adafruit_I2CDevice *i2c_dev = NULL; ///< Pointer to I2C bus interface
 	//  I2C_HandleTypeDef 	*hi2c = nullptr;
-	FRToSI2C * pFRToSI2C = nullptr;
+
 	void read_byte(uint8_t regAddr, uint8_t *ptrData){
 		ret = pFRToSI2C->Master_Transmit(i2cAddr, &regAddr, 1);
 		ret &= pFRToSI2C->Master_Receive(i2cAddr, ptrData, 1);
@@ -371,10 +374,11 @@ protected:
 /**************************************************************************/
 class RTC_PCF212x : RTC_I2C {
 public:
-	RTC_PCF212x(uint8_t I2C_ADDR = PCF212x_ADDRESS)
-	:RTC_I2C(I2C_ADDR){}
+	RTC_PCF212x(FRToSI2C * PtrFRToSI2C, bool isPCF2127 = false)
+	:RTC_I2C(PtrFRToSI2C, PCF212x_ADDRESS), is_pcf2127(isPCF2127)
+	{}
 
-  bool begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127 = false);
+  bool begin();
   bool adjust(const DateTime &dt);
   bool lostPower(void);
   bool sourceClockRun(void);
@@ -385,10 +389,10 @@ public:
   bool setIntAlarm(bool enable);
   bool clearFlagAlarm();//清除Alarm中断（中断回调函数里设置标记后在主循环里使用）
   bool alarmFired();	//Alarm是否产生警报（以轮询检测中断）
-  void enable32K(void);
-  void disable32K(void);
-  bool isEnabled32K(void);
-  float getTemperature(); // in Celsius degree
+//  void enable32K(void);
+//  void disable32K(void);
+//  bool isEnabled32K(void);
+//  float getTemperature(); // in Celsius degree
   /*!
       @brief  Convert the day of the week to a representation suitable for
               storing in the DS3231: from 1 (Monday) to 7 (Sunday).
@@ -398,6 +402,32 @@ public:
   */
   static uint8_t dowToPCF212x(uint8_t d) { return d == 0 ? 7 : d; }
   bool is_pcf2127;
+};
+
+
+/**************************************************************************/
+/*!
+    @brief  RTC based on the PCF8563 chip connected via I2C and the Wire library
+*/
+/**************************************************************************/
+class RTC_PCF8563 : RTC_I2C {
+public:
+  RTC_PCF8563(FRToSI2C * PtrFRToSI2C)
+	:RTC_I2C(PtrFRToSI2C, PCF8563_ADDRESS){}
+
+  bool begin();
+  bool lostPower(void);
+  void adjust(const DateTime &dt);
+  DateTime now();
+  void start(void);
+  void stop(void);
+  uint8_t isrunning();
+  Pcf8563SqwPinMode readSqwPinMode();
+  void writeSqwPinMode(Pcf8563SqwPinMode mode);
+  bool setTimeAlarm(const DateTime *dt, PCF8563AlarmMode alarm_mode);
+  bool setIntAlarm(bool enable);
+  bool clearFlagAlarm();
+  bool alarmFired();
 };
 
 /**************************************************************************/
@@ -558,23 +588,7 @@ public:
   void calibrate(Pcf8523OffsetMode mode, int8_t offset);
 };
 
-/**************************************************************************/
-/*!
-    @brief  RTC based on the PCF8563 chip connected via I2C and the Wire library
-*/
-/**************************************************************************/
-class RTC_PCF8563 : RTC_I2C {
-public:
-  bool begin(FRToSI2C * ptrFRToSI2C);
-  bool lostPower(void);
-  void adjust(const DateTime &dt);
-  DateTime now();
-  void start(void);
-  void stop(void);
-  uint8_t isrunning();
-  Pcf8563SqwPinMode readSqwPinMode();
-  void writeSqwPinMode(Pcf8563SqwPinMode mode);
-};
+
 #endif
 
 

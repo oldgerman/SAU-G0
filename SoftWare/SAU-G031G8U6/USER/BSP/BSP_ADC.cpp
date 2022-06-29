@@ -24,7 +24,7 @@ static void calibrationADC(){
 /**
  * @brief 初始化ADC
  */
-void ADC_Init(){
+void ADC_Start(){
 	calibrationADC();
 	HAL_ADC_Start_DMA(&hadc1,(uint32_t *)&ADCReadings,ADC_SAMPLES);
 }
@@ -50,6 +50,9 @@ uint16_t ADC_Get(){
 #endif
 }
 
+void ADC_Stop(){
+	HAL_ADC_Stop_DMA(&hadc1);
+}
 
 /**
  * @brief 更新ADC采集（若使用DMA无需此函数，否则在while loop中调用）

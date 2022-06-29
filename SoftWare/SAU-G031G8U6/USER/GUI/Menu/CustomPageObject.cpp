@@ -8,7 +8,7 @@
 #include <string.h>
 #include "stdio.h"
 #include "dtostrf.h"
-
+#include "BSP.h"
 //#pragma GCC push_options
 //#pragma GCC optimize ("Os")	//Os优化无Bug
 
@@ -21,7 +21,9 @@ std::vector<Colum> columsDataCollectSTDateTime = {
 		Colum("日", &systemSto.data.dtStartCollect.d, 2, 31, 1, 1, 10),
 		Colum("时", &systemSto.data.dtStartCollect.hh, 2, 23, 0, 1, 10),
 		Colum("分", &systemSto.data.dtStartCollect.mm, 2, 59, 0, 1, 10),
+#if RTC_IC_ALARM_SUPPORT_S
 		Colum("秒", &systemSto.data.dtStartCollect.ss, 2, 59, 0, 1, 10)
+#endif
 };
 
 Page pageDataCollectSTDateTime(&columsDataCollectSTDateTime);

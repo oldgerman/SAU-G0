@@ -49,6 +49,7 @@ void GUI_Init() {
 
 
 void GUI_Update() {
+//	actionStateTime_Reset();
 	Power_AutoShutdownUpdate();	//从STOP模式退出，在此处继续执行
 
 	//一些标记变量用于按键状态锁定，因为主屏进入菜单是长按中键，菜单返回主屏也是长按中键
@@ -196,7 +197,11 @@ void DataCollect_Update(){
 
 			DateTime alarmDateTime = getScheduleSetting_NextDateTime();	//得到下次任务时间
 			rtc.clearFlagAlarm();
-			rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_Hour);
+#if (RTC_IC == RTC_IC_PCF212x)
+			rtc.setTimeAlarm(&alarmDateTime, PCF212x_A_Hour);	//设置闹钟时间
+#elif (RTC_IC == RTC_IC_PCF8563)
+			rtc.setTimeAlarm(&alarmDateTime, PCF8563_A_Hour);	//设置闹钟时间
+#endif
 			rtc.setIntAlarm(SET);
 			numX4Type C_X4T = numSplit(TH_GetDataC_X10() * 10);
 			numX4Type RH_X4T = numSplit(TH_GetDataRH_X1() * 100);

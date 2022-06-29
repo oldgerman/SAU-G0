@@ -44,7 +44,6 @@ void setup(){
 	RTC_Init();
 	TH_Init();
 	IMU_Init();
-	ADC_Init();
 
 	//如果是第一次硬复位开机或者eeprom检测版本号失败，那么强制打印自检信息
 	if(firstPwrOffToRUN == true || checkVersion == false)

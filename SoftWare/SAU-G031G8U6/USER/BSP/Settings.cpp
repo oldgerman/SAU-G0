@@ -112,7 +112,7 @@ void resetSettings() {
 	systemSto.data.TimeLPW_RUN				= 0;				// 累计运行时间--LPW_RUN
 	systemSto.data.TimeSTOP1				= 0;				// 累计运行时间--STOP1
 	//开关标志
-	systemSto.data.settingsBits[sysBits].ctrl	= B00000111;
+	systemSto.data.settingsBits[sysBits].ctrl	= B00000110;
 												// 76543210
 												// bit[0]: 显示开机logo
 												// bit[1]: 启用休眠

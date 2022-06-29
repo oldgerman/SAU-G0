@@ -9,6 +9,7 @@
 #define RTCLIB_SRC_RTC_DEFINES_H_
 
 #define PCF212x_ADDRESS 0x51 << 1   ///< I2C address for PCF212x
+#define PCF8563_ADDRESS 0x51 << 1   ///< I2C address for PCF8563
 
 //这些enum都是对应设置位段的值
 /** DS1307 SQW pin mode settings */
@@ -119,6 +120,13 @@ enum Pcf8563SqwPinMode {
   PCF8563_SquareWave32kHz = 0x80 /**< 32kHz square wave */	//1000,0000
 };
 
+/** PCF8563 Alarm mode */
+enum PCF8563AlarmMode {
+	PCF8563_A_Minute = 0x1C,    // 0001,1100 < 报警：当匹配设定的分
+	PCF8563_A_Hour = 0x18,      // 0001,1000 < 报警：当匹配设定的分、时
+	PCF8563_A_Date = 0x10,      // 0001,0000 < 报警：当匹配设定的分、时、日期
+	PCF8563_A_Day = 0x08,       // 0000,1000 < 报警：当匹配设定的分、时、星期
+};
 /** PCF2129AT **/
 /**
  * 	The register at address 0Fh defines the temperature measurement period and the clock out mode.

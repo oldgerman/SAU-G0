@@ -17,6 +17,12 @@
 	#endif
 #endif
 
+#if RTC_IC_PCF212x
+RTC_PCF212x rtc(&FRToSI2C1);
+#elif RTC_IC_PCF8563
+RTC_PCF8563 rtc(&FRToSI2C1);
+#endif
+
 /*
  *	判断RTC闹钟中断即将来临为ture而进行比较的最小时间，单位s
  *	这时间由"估计长按电源键进入休眠模式的时间"和"估计按电源键从休眠模式唤醒到开始任务调度的时间"相加得到
@@ -24,7 +30,7 @@
  */
 const uint8_t RTC_AlarmWillTrigger_MiniumSecond = 5;
 
-RTC_PCF212x rtc;
+//RTC_PCF8563 rtc;
 DateTime now;	//now变量即作为打印时间的变量，也作为串口修改的时间字符串存储的变量
 
 DateTime& RTC_GetNowDateTime(){
@@ -40,7 +46,7 @@ void RTC_Init()
 	//如果是STOP1模式恢复过来，那么3.3V断过电，但RTC是没有断VBAT电源的，之前的配置仍然有效，所以不需要重新初始化
 	//从STOP1模式恢复过来时，
 	if(recoverFromSTOP1 == false){
-	  if (!rtc.begin(&FRToSI2C1, false)){
+	  if (!rtc.begin()){
 		DBG_PRINT_RTC("Couldn't find RTC");
 
 		rtc.setIntAlarm(RESET);	//关闭Alarm中断

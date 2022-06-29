@@ -71,7 +71,7 @@ public:
 #if RTOS_EN
 	  _I2CSemaphore = nullptr;
 #else
-	  _I2CSemaphore = 1;
+	  _I2CSemaphore = 0;
 #endif
   }
   ~FRToSI2C(){}

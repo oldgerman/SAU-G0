@@ -11,6 +11,21 @@
 #include <stdint.h>
 #include "RTClib.h"	//提供uintDateTime
 
+/*RTC编号表，无需修改，若修改，请保证每一个宏值不一样*/
+#define RTC_IC_PCF212x 0
+#define RTC_IC_PCF8563 1
+
+/*设置你想用的RTC芯片*/
+//#define RTC_IC RTC_IC_PCF212x
+#define RTC_IC RTC_IC_PCF8563
+//RTC的闹钟最小粒度
+#if (RTC_IC == RTC_IC_PCF212x)		//PCF212x可支持秒级闹钟
+#define RTC_IC_ALARM_SUPPORT_S 1
+#elif (RTC_IC == RTC_IC_PCF8563)	//PCF8563只支持到分钟级闹钟
+#define RTC_IC_ALARM_SUPPORT_S 0
+#endif
+
+
 /*
  * BSP.h -- Board Support
  *
@@ -35,9 +50,10 @@ void FRToI2CxSInit();
 void unstick_I2C(I2C_HandleTypeDef *);
 bool waitTime(uint32_t *timeOld, uint32_t wait);
 /*ADC*/
-void ADC_Init();
+void ADC_Start();
 void ADC_Update();
 uint16_t ADC_Get();
+void ADC_Stop();
 /*IMU*/
 void IMU_Init();
 void IMU_Update();
@@ -88,7 +104,11 @@ uintDateTime& USART_GetDateTime();
 bool RTC_CheckUintDateTime(uintDateTime *dt);
 DateTime& RTC_GetNowDateTime();
 uint8_t RTC_GetNowSecond();
+#if (RTC_IC == RTC_IC_PCF212x)
 extern RTC_PCF212x rtc;
+#elif (RTC_IC == RTC_IC_PCF8563)
+extern RTC_PCF8563 rtc;
+#endif
 }
 #endif
 #endif /* BSP_BSP_H_ */

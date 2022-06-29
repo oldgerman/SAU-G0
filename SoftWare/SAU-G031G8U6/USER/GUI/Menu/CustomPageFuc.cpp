@@ -116,6 +116,8 @@ struct history {
 	uint8_t usage = 0;
 	bool markBackFromOtherUI = true;
 	ButtonState oldButtons = buttons;
+
+	ADC_Start();
 	for (;;) {
 
 		/*读取电池电压*/
@@ -181,6 +183,7 @@ struct history {
 				break;
 		}
 	}
+	ADC_Stop();
 	RGB_TurnOff();
 }
 
@@ -346,7 +349,11 @@ void columsDataCollect_Switch(){
 	 * 将周期换算为TimeSpan，乘以已采集的数量，加上开始啊时间的结果，来步进闹钟下次的设置时间
 	 */
 	DateTime dt = getScheduleSetting_NextDateTime();
+#if (RTC_IC == RTC_IC_PCF212x)
 	rtc.setTimeAlarm(&dt, PCF212x_A_Hour);	//设置闹钟时间
+#elif (RTC_IC == RTC_IC_PCF8563)
+    rtc.setTimeAlarm(&dt, PCF8563_A_Hour);	//设置闹钟时间
+#endif
 	rtc.setIntAlarm(SET);	///打开Alarm中断
 }
 
@@ -376,13 +383,23 @@ void columsDataCollect_ScheduleSetting_NumDataOneDay(){
 	switch (buttons) {
 	case BUTTON_A_LONG:
 	case BUTTON_A_SHORT:
-		while((Sec24H % systemSto.data.NumDataOneDay) != 0) {
+#if RTC_IC_ALARM_SUPPORT_S
+		while((Sec24H % systemSto.data.NumDataOneDay) != 0)
+#else
+		while((Min24H % systemSto.data.NumDataOneDay) != 0)
+#endif
+		{
 			systemSto.data.NumDataOneDay--;
 		}
 		break;
 	case BUTTON_B_LONG:
 	case BUTTON_B_SHORT:
-		while((Sec24H % systemSto.data.NumDataOneDay) != 0) {
+#if RTC_IC_ALARM_SUPPORT_S
+		while((Sec24H % systemSto.data.NumDataOneDay) != 0)
+#else
+		while((Min24H % systemSto.data.NumDataOneDay) != 0)
+#endif
+		{
 			systemSto.data.NumDataOneDay++;
 		}
 		break;
@@ -453,7 +470,13 @@ void columsDrawDateTime(DateTime *dt, const char* str)
 	u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
 	u8g2.drawUTF8(1, y, buf);
 	memset(buf, 0, strlen(buf));
-	sprintf(buf, "%02d:%02d:%02d", dt->hour(),dt->minute(), dt->second());
+	sprintf(buf, "%02d:%02d:%02d", dt->hour(),dt->minute(),
+#if RTC_IC_ALARM_SUPPORT_S
+			dt->second()
+#else
+			0
+#endif
+	);
 	y += 16;
 	u8g2.drawUTF8(1, y, buf);
 
@@ -607,7 +630,7 @@ void columsAccessibility_ResetSettings() {
 }
 
 void columsAccessibility_I2CScaner() {
-	uint8_t i = 0;
+	uint16_t i = 0;
 	int8_t ok = -1;
 	uint8_t i2cDevices = 0;
 	char buffUSB[5] = { 0 };
@@ -666,8 +689,15 @@ void columsAccessibility_I2CScaner() {
 				uint8_t x = 0;
 				i2cDevices = 0;
 				if(hi2c){
-					for (i = 0; i < 127; i++) {
-						status = HAL_I2C_Master_Transmit(hi2c, i << 1, 0, 0,50);
+					for (i = 0; i < 128; i++) {
+					 	  /*
+					 	   * the HAL wants a left aligned i2c address
+					 	   * hi2c is the handle
+					 	   * (uint16_t)(i<<1) is the i2c address left aligned
+					 	   * retries 1
+					 	   * timeout 10
+					 	   */
+						status = HAL_I2C_IsDeviceReady(hi2c, (uint16_t)(i<<1), 1, 10);
 						if (status == HAL_OK) {
 							++i2cDevices;	//设备计数+1,从1开始计数
 							sprintf(buffUSB, "0x%02X", i);

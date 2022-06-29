@@ -137,13 +137,8 @@
     @return True if Wire can find PCF212x or false otherwise.
 */
 /**************************************************************************/
-bool RTC_PCF212x::begin(FRToSI2C * ptrFRToSI2C, bool isPCF2127) {
-	pFRToSI2C = ptrFRToSI2C;
-	is_pcf2127 = isPCF2127;
-
-	ret = 0;
+bool RTC_PCF212x::begin() {
 	uint8_t val;		//存储1byte寄存器值
-
 	ret = pFRToSI2C->probe(PCF212x_ADDRESS);
 	if (ret == 0)
 		return ret;
@@ -324,7 +319,6 @@ bool RTC_PCF212x::lostPower(void) {
     8.8 Time and date function
 		Most of these registers are coded in the Binary Coded Decimal (BCD) format.
 		这些寄存器中的大多数都以二进制编码十进制 (BCD) 格式编码。
-
     @brief  Set the date and flip the Oscillator Stop Flag
     @param dt DateTime object containing the date/time to set
 */
@@ -487,5 +481,3 @@ bool RTC_PCF212x::alarmFired() {
 	  read_bit(PCF212x_REG_CTRL2, PCF212x_BIT_CTRL2_AF, &mode);
 	  return mode;
 }
-
-

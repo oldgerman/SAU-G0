@@ -22,6 +22,7 @@ extern uint16_t settings_page[20];//暂时划分一个页(2KB)用于存储
 
 /* 默认设置值 */
 #define Sec24H		86400U		//一天的秒数
+#define Min24H		 1440U		//一天的分钟数
 //固件版本
 #define FW_VERSION_INTEGER 1U
 #define FW_VERSION_DECIMAL 0U
