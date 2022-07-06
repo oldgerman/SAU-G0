@@ -1,14 +1,24 @@
-[TOC]
+- [1. 简介](#1-简介)
+- [2. 极限续航计算](#2-极限续航计算)
+- [3. PCB](#3-pcb)
+  - [SAU-G0（主控板）](#sau-g0主控板)
+  - [SAU-G0-EX_AHT-GL（拓展版-AHT温湿度计-普通级）](#sau-g0-ex_aht-gl拓展版-aht温湿度计-普通级)
+  - [SAU-G0-EX_AHT-PL（拓展版-AHT温湿度计-精准级）](#sau-g0-ex_aht-pl拓展版-aht温湿度计-精准级)
+  - [SAU-G0-EX_microSD（拓展版-microSD）](#sau-g0-ex_microsd拓展版-microsd)
+- [4. 焊接](#4-焊接)
+- [5. BOM](#5-bom)
+- [6. 软件](#6-软件)
+  - [搭建环境](#搭建环境)
+  - [功能进度](#功能进度)
+- [7. Acknowledgments](#7-acknowledgments)
 
 ## 1. 简介
 
-SAU-G0（Sensor Acquisition Uinit（传感器采集单元），基于G031G8U6），是本人学习电池供电型低功耗应用的第一个作品
-
-PCB采用叠板设计，分为主控板与拓展板，具体应用取决于拓展板上的传感器和存储芯片
+SAU-G0（Sensor Acquisition Uinit（传感器采集单元），基于G031G8U6），是本人学习电池供电型低功耗应用的第一个作品，PCB采用叠板设计，分为主控板与拓展板，具体应用取决于拓展板上的传感器和存储芯片
 
 ![](Images/MindMap_main.png)
 
-## 2. 极限续航参数
+## 2. 极限续航计算
 
 使用CubeMX tools工具粗略计算（未引入唤醒瞬间的电流）：1%的时间运行，99%的时间休眠，每天运行864秒（屏幕亮度为1%），其他时间休眠，那么100mA锂电池极限续航2个月7天
 
@@ -20,7 +30,7 @@ PCB采用叠板设计，分为主控板与拓展板，具体应用取决于拓�
 
 ## 3. PCB
 
-### SAU-G0（主控单元）
+### SAU-G0（主控板）
 
 - 硬件：STM32G031G8U6 + CH343P + LIS3DH + TPS63000 / TPS63001 + TP4054 / MCP73831-2ATI/OT
 
@@ -48,7 +58,7 @@ PCB采用叠板设计，分为主控板与拓展板，具体应用取决于拓�
 ### SAU-G0-EX_microSD（拓展版-microSD）
 
 - 硬件：microSD卡或NOR Flash + 12mm蜂鸣片
-- 备注：无传感器和RTC芯片，整活儿专用
+- 备注：无传感器和RTC芯片，整活儿专用，目前暂未写固件
 
 | ![SAU-G0-EX_microSD_3Dview_2](Images/SAU-G0-EX_microSD_3Dview_2.png) | ![SAU-G0-EX_microSD_3Dview_1](Images/SAU-G0-EX_microSD_3Dview_1.png) | ![SAU-G0-EX_microSD_2Dview_1](Images/SAU-G0-EX_microSD_2Dview_1.png) |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
