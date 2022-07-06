@@ -1,0 +1,72 @@
+Protel Design System Design Rule Check
+PCB File : D:\SAU-G0\Hardware\AD_Project\SAU-G0-EX_SD-card\SAU-G0-EX_SD-card.PcbDoc
+Date     : 2022/7/2
+Time     : 13:38:57
+
+WARNING: Design contains shelved or modified (but not repoured) polygons. The result of DRC is not correct. Recommended to restore/repour all polygons and proceed with DRC again
+   Polygon named: vcc-2 In net GND On Top Layer
+   Polygon named: vcc-2 In net GND On Top Layer
+   Polygon named: vcc-2 In net GND On Top Layer
+   Polygon named: vcc-2 In net VBAT_IN On Bottom Layer
+   Polygon named: vcc-2 In net VBAT_IN On Bottom Layer
+   Polygon named: vcc-2 In net VBAT_IN On Bottom Layer
+   Polygon named: vcc-2 In net VBAT_IN On Bottom Layer
+   Polygon named: vcc-2 In net VBAT_IN On Bottom Layer
+   Polygon named: vcc-2 In net NetL1_1 On Bottom Layer
+   Polygon named: vcc-2 On Bottom Layer
+   Polygon named: vcc-2 In net GND On Bottom Layer
+
+Processing Rule : Clearance Constraint (Gap=5mil) (All),(All)
+Rule Violations :0
+
+Processing Rule : Short-Circuit Constraint (Allowed=No) (All),(All)
+Rule Violations :0
+
+Processing Rule : Un-Routed Net Constraint ( (All) )
+Rule Violations :0
+
+Processing Rule : Modified Polygon (Allow modified: No), (Allow shelved: No)
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Bottom Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Bottom Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Bottom Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Bottom Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Bottom Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Bottom Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Bottom Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Bottom Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Top Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Top Layer 
+   Violation between Modified Polygon: Polygon Shelved  (vcc-2) on Top Layer 
+Rule Violations :11
+
+Processing Rule : Width Constraint (Min=5mil) (Max=100mil) (Preferred=5mil) (All)
+Rule Violations :0
+
+Processing Rule : Power Plane Connect Rule(Direct Connect )(Expansion=10mil) (Conductor Width=10mil) (Air Gap=10mil) (Entries=4) (All)
+Rule Violations :0
+
+Processing Rule : Hole Size Constraint (Min=1mil) (Max=100mil) (All)
+Rule Violations :0
+
+Processing Rule : Hole To Hole Clearance (Gap=10mil) (All),(All)
+Rule Violations :0
+
+Processing Rule : Minimum Solder Mask Sliver (Gap=0mil) (All),(All)
+Rule Violations :0
+
+Processing Rule : Silk To Solder Mask (Clearance=0mil) (IsPad),(All)
+Rule Violations :0
+
+Processing Rule : Silk to Silk (Clearance=0mil) (All),(All)
+Rule Violations :0
+
+Processing Rule : Net Antennae (Tolerance=0mil) (All)
+Rule Violations :0
+
+Processing Rule : Height Constraint (Min=0mil) (Max=1000mil) (Prefered=500mil) (All)
+Rule Violations :0
+
+
+Violations Detected : 11
+Waived Violations : 0
+Time Elapsed        : 00:00:01

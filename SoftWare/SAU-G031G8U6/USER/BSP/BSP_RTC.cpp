@@ -53,6 +53,12 @@ void RTC_Init()
 		rtc.clearFlagAlarm();	//清除Alarm Flag
 	  }
 	}
+//	输出32.768KHz方波测试，注意需要外部上拉电阻
+#if RTC_IC_PCF212x
+//	rtc.writeSqwPinMode(PCF212x_SquareWave32768Hz);
+#elif RTC_IC_PCF8563
+//	rtc.writeSqwPinMode(PCF8563_SquareWave32kHz);
+#endif
 
 #if 0
   if (rtc.lostPower()) {

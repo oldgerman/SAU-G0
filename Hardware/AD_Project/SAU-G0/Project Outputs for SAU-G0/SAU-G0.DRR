@@ -1,0 +1,19 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: SAU-G0.PcbDoc   2022/7/6  11:26:21
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : SAU-G0-RoundHoles.TXT
+ASCII SlotHoles File : SAU-G0-SlotHoles.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      8mil (0.2mm)                                              Round             82        PTH        0.00inch (0.00mm)
+T2      12mil (0.3mm)                                             Round             5         PTH        0.00inch (0.00mm)
+T3      16mil (0.4mm)                                             Round             14        PTH        0.00inch (0.00mm)
+T4      20mil (0.5mm)                                             Slot              4         PTH        0.00inch (0.00mm)
+T5      32mil (0.8mm)                                             Round             8         PTH        0.00inch (0.00mm)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              113
+
+Total Processing Time (hh:mm:ss) : 00:00:01

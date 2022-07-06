@@ -1,0 +1,13 @@
+Output: NC Drill Files
+Type  : NC Drill
+From  : Project [Thermo_Hygrometer.PrjPcb]
+   Generated File[T&H-RoundHoles.TXT]
+   Generated File[T&H-SlotHoles.TXT]
+   Generated File[T&H.LDP]
+   Generated File[T&H.DRR]
+
+
+Files Generated   : 4
+Documents Printed : 0
+
+Finished Output Generation At 17:49:16 On 2022/5/9

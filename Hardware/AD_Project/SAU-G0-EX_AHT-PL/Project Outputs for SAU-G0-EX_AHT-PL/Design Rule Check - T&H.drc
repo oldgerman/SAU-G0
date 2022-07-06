@@ -1,0 +1,56 @@
+Protel Design System Design Rule Check
+PCB File : D:\ODG-PROJECT\Thermo_Hygrometer\AD_Project\Thermo_Hygrometer\T&H.PcbDoc
+Date     : 2022/5/9
+Time     : 17:46:45
+
+Processing Rule : Clearance Constraint (Gap=0.127mm) (All),(All)
+Rule Violations :0
+
+Processing Rule : Short-Circuit Constraint (Allowed=No) (All),(All)
+Rule Violations :0
+
+Processing Rule : Un-Routed Net Constraint ( (All) )
+   Violation between Un-Routed Net Constraint: Net GND Between Pad C5-1(21.082mm,13.081mm) on Bottom Layer [Unplated] And Pad U8-2(25.527mm,12.57mm) on Bottom Layer 
+   Violation between Un-Routed Net Constraint: Net SPI2_NSS Between Pad P1-2(18.68mm,20.59mm) on Multi-Layer And Pad P6-1(39mm,20.59mm) on Multi-Layer 
+   Violation between Un-Routed Net Constraint: Net MISO2 Between Track (18.68mm,18.59mm)(18.862mm,18.408mm) on Top Layer And Pad P6-3(39mm,18.59mm) on Multi-Layer 
+   Violation between Un-Routed Net Constraint: Net SDA1/MOSI2 Between Track (19.74mm,16.652mm)(19.793mm,16.598mm) on Top Layer And Via (25.4mm,13.97mm) from Top Layer to Bottom Layer 
+   Violation between Un-Routed Net Constraint: Net SCL1/SCK2 Between Track (20.593mm,16.598mm)(20.637mm,16.641mm) on Top Layer And Track (26.477mm,13.589mm)(26.543mm,13.589mm) on Bottom Layer 
+   Violation between Un-Routed Net Constraint: Net 3V3 Between Via (20.701mm,12.065mm) from Top Layer to Bottom Layer And Track (24.612mm,15.491mm)(24.612mm,16.697mm) on Bottom Layer 
+   Violation between Un-Routed Net Constraint: Net GPIO_ndef Between Via (15.24mm,12.573mm) from Top Layer to Bottom Layer And Via (30.734mm,11.557mm) from Top Layer to Bottom Layer 
+   Violation between Un-Routed Net Constraint: Net VbatWeek Between Via (20.243mm,9.652mm) from Top Layer to Bottom Layer And Via (37.373mm,17.012mm) from Top Layer to Bottom Layer 
+Rule Violations :8
+
+Processing Rule : Modified Polygon (Allow modified: No), (Allow shelved: No)
+Rule Violations :0
+
+Processing Rule : Width Constraint (Min=0.127mm) (Max=2.54mm) (Preferred=0.127mm) (All)
+Rule Violations :0
+
+Processing Rule : Power Plane Connect Rule(Direct Connect )(Expansion=0.254mm) (Conductor Width=0.254mm) (Air Gap=0.254mm) (Entries=4) (All)
+Rule Violations :0
+
+Processing Rule : Hole Size Constraint (Min=0.025mm) (Max=2.54mm) (All)
+Rule Violations :0
+
+Processing Rule : Hole To Hole Clearance (Gap=0.254mm) (All),(All)
+Rule Violations :0
+
+Processing Rule : Minimum Solder Mask Sliver (Gap=0mm) (All),(All)
+Rule Violations :0
+
+Processing Rule : Silk To Solder Mask (Clearance=0mm) (IsPad),(All)
+Rule Violations :0
+
+Processing Rule : Silk to Silk (Clearance=0mm) (All),(All)
+Rule Violations :0
+
+Processing Rule : Net Antennae (Tolerance=0mm) (All)
+Rule Violations :0
+
+Processing Rule : Height Constraint (Min=0mm) (Max=25.4mm) (Prefered=12.7mm) (All)
+Rule Violations :0
+
+
+Violations Detected : 8
+Waived Violations : 0
+Time Elapsed        : 00:00:02
