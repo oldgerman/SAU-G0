@@ -1,0 +1,14 @@
+Source PCB Design SAU-G0-EX_Splicing.PcbDoc contains embedded board array. It is recomended to generate individual BOM for each embedded board PCB design.
+
+Output: NC Drill Files
+Type  : NC Drill
+From  : Project [Free Documents]
+   Generated File[SAU-G0-EX_Splicing.TXT]
+   Generated File[SAU-G0-EX_Splicing.LDP]
+   Generated File[SAU-G0-EX_Splicing.DRR]
+
+
+Files Generated   : 3
+Documents Printed : 0
+
+Finished Output Generation At 13:03:40 On 2022/7/7

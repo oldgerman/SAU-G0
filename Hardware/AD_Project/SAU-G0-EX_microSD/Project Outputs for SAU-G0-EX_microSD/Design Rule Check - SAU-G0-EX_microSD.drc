@@ -1,7 +1,7 @@
 Protel Design System Design Rule Check
 PCB File : D:\SAU-G0\Hardware\AD_Project\SAU-G0-EX_microSD\SAU-G0-EX_microSD.PcbDoc
-Date     : 2022/7/6
-Time     : 20:19:52
+Date     : 2022/7/7
+Time     : 12:56:12
 
 Processing Rule : Clearance Constraint (Gap=5mil) (All),(All)
 Rule Violations :0
@@ -45,4 +45,4 @@ Rule Violations :0
 
 Violations Detected : 0
 Waived Violations : 0
-Time Elapsed        : 00:00:00
+Time Elapsed        : 00:00:01

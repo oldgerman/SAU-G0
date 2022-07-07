@@ -1,0 +1,21 @@
+Output: Gerber Files
+Type  : Gerber
+From  : Variant [[No Variations]] of Project [SAU-G0-EX_TMPL.PrjPcb]
+   Generated File[SAU-G0-EX_TMPL.GTO]
+   Generated File[SAU-G0-EX_TMPL.GTS]
+   Generated File[SAU-G0-EX_TMPL.GTL]
+   Generated File[SAU-G0-EX_TMPL.GBL]
+   Generated File[SAU-G0-EX_TMPL.GBS]
+   Generated File[SAU-G0-EX_TMPL.GBO]
+   Generated File[SAU-G0-EX_TMPL.GM1]
+   Generated File[SAU-G0-EX_TMPL.GPT]
+   Generated File[SAU-G0-EX_TMPL.GPB]
+   Generated File[SAU-G0-EX_TMPL.RUL]
+   Generated File[SAU-G0-EX_TMPL.EXTREP]
+   Generated File[SAU-G0-EX_TMPL.REP]
+
+
+Files Generated   : 12
+Documents Printed : 0
+
+Finished Output Generation At 13:14:39 On 2022/7/7

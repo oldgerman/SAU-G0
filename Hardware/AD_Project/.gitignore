@@ -3,5 +3,6 @@ __Previews
 History
 *.LOG
 *.zip
+*.Zip
 *.SchDocPreview
 *.PcbDocPreview
