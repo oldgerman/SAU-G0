@@ -2,37 +2,14 @@
 FileName = SAU-G0-EX_Splicing.GBR
 AutoAperture = True
 *************************************************************
-Generating : Drill Drawing
-      File : SAU-G0-EX_Splicing.GD1
+Generating : Mechanica 16
+      File : SAU-G0-EX_Splicing.GM4
 
     Adding Layer      : Mechanica 16
-
-    Adding Drill Pair : Top Layer-Bottom Layer
-
-    Adding Layer      : Drill Drawing
 
 
 Used DCodes :
     D10
     D11
-    D12
-    D13
-*************************************************************
-
-*************************************************************
-Generating : Drill Guide
-      File : SAU-G0-EX_Splicing.GG1
-
-    Adding Layer      : Mechanica 16
-
-    Adding Drill Pair : Top Layer-Bottom Layer
-
-    Adding Layer      : Drill Guide
-
-
-Used DCodes :
-    D10
-    D11
-    D12
 *************************************************************
 
