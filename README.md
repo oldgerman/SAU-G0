@@ -171,6 +171,6 @@ STM32G031G8U6出厂时option bytes默认BOOT0信号由option byte决定，需要
 
 ## 10. Acknowledgments
 
-- 感谢豆老板](https://oshwhub.com/red_bean)谈下1.6元电子烟主板车车
+- 感谢[豆老板](https://oshwhub.com/red_bean)谈下1.6元电子烟主板车车
 - 感谢 [JLC](https://www.jlc.com/) 制造的高品质 PCB
 - 感谢稚晖 [Planck-Pi](https://github.com/peng-zhihui/Planck-Pi) 的 Type-C 正反插两用的灵感
