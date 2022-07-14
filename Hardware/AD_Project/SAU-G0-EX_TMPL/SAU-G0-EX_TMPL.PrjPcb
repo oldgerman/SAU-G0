@@ -71,62 +71,6 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=NOTGBZDC
 
-[GeneratedDocument1]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.EXTREP
-DItemRevisionGUID=
-
-[GeneratedDocument2]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GBL
-DItemRevisionGUID=
-
-[GeneratedDocument3]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GBO
-DItemRevisionGUID=
-
-[GeneratedDocument4]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GBS
-DItemRevisionGUID=
-
-[GeneratedDocument5]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GD1
-DItemRevisionGUID=
-
-[GeneratedDocument6]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GG1
-DItemRevisionGUID=
-
-[GeneratedDocument7]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GM1
-DItemRevisionGUID=
-
-[GeneratedDocument8]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GPB
-DItemRevisionGUID=
-
-[GeneratedDocument9]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GPT
-DItemRevisionGUID=
-
-[GeneratedDocument10]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GTL
-DItemRevisionGUID=
-
-[GeneratedDocument11]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GTO
-DItemRevisionGUID=
-
-[GeneratedDocument12]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.GTS
-DItemRevisionGUID=
-
-[GeneratedDocument13]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.REP
-DItemRevisionGUID=
-
-[GeneratedDocument14]
-DocumentPath=Project Outputs for SAU-G0-EX_TMPL\SAU-G0-EX_TMPL.RUL
-DItemRevisionGUID=
-
 [Configuration1]
 Name=Sources
 ParameterCount=0

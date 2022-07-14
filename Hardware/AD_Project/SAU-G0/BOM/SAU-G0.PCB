@@ -6317,8 +6317,7 @@ ACCEL_ASCII "D:\SAU-G0\Hardware\AD_Project\BOM\SAU-G0.PCB"
       (text (pt 592mil 113mil) "v1.0" (textStyleRef "T:H46W5") )
   )
   (layerContents (layerNumRef 5)
-      (text (pt 242mil 580mil) "SAU
--G0" (textStyleRef "T:H58W5") (isFlipped True) )
+      (text (pt 242mil 580mil) "SAU-G0" (textStyleRef "T:H58W5") (isFlipped True) )
       (text (pt 222mil 434mil) "v1.0" (textStyleRef "T:H46W5") (isFlipped True) )
   )
   (layerContents (layerNumRef 6)

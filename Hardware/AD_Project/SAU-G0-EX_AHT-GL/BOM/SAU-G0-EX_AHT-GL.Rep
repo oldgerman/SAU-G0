@@ -1,0 +1,61 @@
+Export log for : SAU-G0-EX_AHT-GL.Rep
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+AddingPadStyle (Default)
+AddingPadStyle EF16X35TOP1
+AddingPadStyle EF24X24TOP1
+AddingPadStyle EF30X12TOP1
+AddingPadStyle EF57X69TOP1
+AddingPadStyle EF43X94TOP1
+AddingPadStyle EF39X71TOP1
+AddingPadStyle EF28X35TOP1
+AddingPadStyle EF24X57TOP1
+AddingPadStyle EF28X28TOP1
+AddingPadStyle EF35X35TOP1
+AddingPadStyle EF35X31TOP1
+AddingPadStyle EF31X20TOP1
+AddingPadStyle P:EX65Y51D311
+Adding ViaStyle (Default)
+Adding ViaStyle V:EX20Y20D121
+Adding TextStyle (Default)
+Adding TextStyle T:H60W10
+Adding TextStyle T:H120W10
+Adding TextStyle T:H35W8
+Adding PatternDef SJ_2P_MINI_1
+Adding PatternDef C0402_1
+Adding PatternDef DFN-8-1EP_3x2mm_P0.5mm_EP1.75x1.45mm_1
+Adding PatternDef ODG_LOGO_soldermask_1
+Adding PatternDef MS621FE-FL11E_1
+Adding PatternDef XTAL_2P_3215_1
+Adding PatternDef DIODES SOT-323-3_1
+Adding PatternDef ANALOG DEV SOIC-8 R8_1
+Adding PatternDef WS2812_2020_1
+Adding PatternDef SJ_3P_MINI_1
+Adding PatternDef R0603_1
+Adding PatternDef SOD-323_1
+Adding PatternDef C0603_1
+Adding PatternDef AHT20_1
+Adding PatternDef 2.0mm_Male_2x2_1
+Adding PatternDef 2.0MM_MALE_2X2_2
+Adding CompDef SJ_2P_MINI_1
+Adding CompDef C0402_1
+Adding CompDef DFN-8-1EP_3x2mm_P0.5mm_EP1.75x1.45mm_1
+Adding CompDef ODG_LOGO_soldermask_1
+Adding CompDef MS621FE-FL11E_1
+Adding CompDef XTAL_2P_3215_1
+Adding CompDef DIODES SOT-323-3_1
+Adding CompDef ANALOG DEV SOIC-8 R8_1
+Adding CompDef WS2812_2020_1
+Adding CompDef SJ_3P_MINI_1
+Adding CompDef R0603_1
+Adding CompDef SOD-323_1
+Adding CompDef C0603_1
+Adding CompDef AHT20_1
+Adding CompDef 2.0mm_Male_2x2_1
+Adding CompDef 2.0MM_MALE_2X2_2
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+ 
+EndLog

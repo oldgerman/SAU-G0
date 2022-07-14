@@ -18,7 +18,7 @@ bool firstPwrOffToRUN = true;
 void preSetupInit(void){
 	powerOn();
 	FRToI2CxSInit();//解锁I2C
-//	delay(200);//等待电压稳定
+	//delay(100);//等待电压稳定
 #if _EEPROM_EXC_PINS
 	ee24.exchangeI2CPins();
 #endif

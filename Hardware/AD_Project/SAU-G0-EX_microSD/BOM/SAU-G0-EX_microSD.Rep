@@ -1,0 +1,41 @@
+Export log for : SAU-G0-EX_microSD.Rep
+AddingPadStyle (Default)
+AddingPadStyle EF24X24TOP1
+AddingPadStyle EF47X19TOP1
+AddingPadStyle EF55X75TOP1
+AddingPadStyle EF51X55TOP1
+AddingPadStyle EF31X59TOP1
+AddingPadStyle EF39X37TOP1
+AddingPadStyle EF79X79TOP1
+AddingPadStyle EF28X35TOP1
+AddingPadStyle P:EX65Y51D311
+Adding ViaStyle (Default)
+Adding ViaStyle V:EX20Y20D121
+Adding TextStyle (Default)
+Adding TextStyle T:H60W10
+Adding TextStyle T:H120W10
+Adding TextStyle T:H35W8
+Adding TextStyle T:H50W3
+Adding PatternDef R0402_1
+Adding PatternDef WIN_SS-8_WIN-L_1
+Adding PatternDef C0402_1
+Adding PatternDef MOLEX_473521001_MICROSD_CARD_1
+Adding PatternDef —πµÁÃ’¥…∑‰√˘∆¨12MM_1
+Adding PatternDef DIODES SOT-323-3_1
+Adding PatternDef ODG_LOGO_soldermask_1
+Adding PatternDef 2.0mm_Male_2x2_1
+Adding PatternDef 2.0MM_MALE_2X2_2
+Adding CompDef R0402_1
+Adding CompDef WIN_SS-8_WIN-L_1
+Adding CompDef C0402_1
+Adding CompDef MOLEX_473521001_MICROSD_CARD_1
+Adding CompDef —πµÁÃ’¥…∑‰√˘∆¨12MM_1
+Adding CompDef DIODES SOT-323-3_1
+Adding CompDef ODG_LOGO_soldermask_1
+Adding CompDef 2.0mm_Male_2x2_1
+Adding CompDef 2.0MM_MALE_2X2_2
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Unexpected Poly Region Object Found On Layer TopOverlay.
+ 
+EndLog
