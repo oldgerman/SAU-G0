@@ -17,9 +17,9 @@
 	#endif
 #endif
 
-#if RTC_IC_PCF212x
+#if (RTC_IC == RTC_IC_PCF212x)
 RTC_PCF212x rtc(&FRToSI2C1);
-#elif RTC_IC_PCF8563
+#elif (RTC_IC == RTC_IC_PCF8563)
 RTC_PCF8563 rtc(&FRToSI2C1);
 #endif
 

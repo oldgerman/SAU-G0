@@ -114,7 +114,7 @@ struct orgData{
  */
 typedef union {
 	struct orgData data;			//运行时使用
-	uint8_t ctrl[sizeof(orgData)];	//向eeprom读写时使用
+	uint8_t ctrl[sizeof(orgData)];	//向eeprom读写时使用	//sizeof 是一个关键字，它是一个编译时运算符，参数为数据类型
 } systemStorageType;
 
 

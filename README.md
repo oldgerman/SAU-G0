@@ -148,7 +148,7 @@ STM32G031G8U6出厂时option bytes默认BOOT0信号由option byte决定，需要
 
 需要FlyMCU和开STM32CubeProgrammer 配合烧录
 
- FlyMCU选择 RTS低电平DTR高电平进BooTloader，显示已连接后（FlyMCU无法对G0进行进一步操作），打开STM32CubeProgrammer（新版STM32CubeProgrammer ，会有RTS和DTR选项，都选择0） 以UART连接即可烧录
+**按住OK键保持不放**，FlyMCU选择 **RTS低电平DTR高电平进BooTloader**，显示已连接后（FlyMCU无法对G0进行进一步操作），**即可松开OK键**，然后打开STM32CubeProgrammer（FlyMCU可不关闭，另外新版STM32CubeProgrammer ，会有RTS和DTR选项，都选择0）以 UART **波特率115200** 连接，如果一切顺利，即可进入烧录状态
 
 你可能会问为啥不直接用STM32CubeProgrammer操作DTR和RTS而要用FlyMCU操作，因为这个功能我测试对于一键下载电路不起作用，DTR和RTS信号的波形很奇怪，但是FlyMCU可以
 

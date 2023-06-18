@@ -62,9 +62,9 @@
 /* Private macro -------------------------------------------------------------*/
 #define LIS3DH_I2C_ADDRESS (25 << 1)	//25D=11001b=0x19（7bit i2c地址）
 
-#ifndef DEBUG_PRINT_IMU
+#ifndef DEBUG_PRINT_TOUCH
 #if 1  //< Change 0 to 1 to open debug macro and check program debug information
-#define DEBUG_PRINT_IMU usb_printf
+#define DEBUG_PRINT_TOUCH printf
 #else
 	#define DEBUG_PRINT_IMU(...)
 	#endif
