@@ -1,3 +1,9 @@
+## SAU-G0
+
+> 某存在感很弱的温湿度计（）
+
+![0.SAU-G0_PA12](Images/0.SAU-G0_PA12.JPG)
+
 - [1. 简介](#1-简介)
 - [2. 续航](#2-续航)
   - [最低电流](#最低电流)
@@ -154,9 +160,24 @@ STM32G031G8U6出厂时option bytes默认BOOT0信号由option byte决定，需要
 
 ![](Images/一键下载电路电平测试-低功耗版_FlyMcu和STM32CubeProgrammer配合以ISP连接G031.png)
 
-## 8. 成品
+## 8. 成品展示
 
-（外壳待验证）
+### 外壳
+
+- STL模型路径：[SAU-G0/Hardware/SW_Project/STL_OUT](https://github.com/oldgerman/SAU-G0/Hardware/SW_Project/STL_OUT)
+
+不同的打印方式需要使用不同的打印模型：
+
+- FDM打印：上盖和盒子得分两个件打印，模型文件使用 **外壳-方案2.STL** 和 **外壳-方案2-盖子.STL**
+- 树脂光固化、尼龙激光烧结打印：盖子和盒子可合并成一个模型打印，模型文件使用 **外壳-方案2_LC打印_连接零件_连接杆1.5mm.STL**
+
+PA12打印的外壳组装后效果：
+
+| ![Case_JLC_3D_PA12(1)](Images/Case_JLC_3D_PA12(1).JPG) | ![Case_JLC_3D_PA12(2)](Images/Case_JLC_3D_PA12(2).JPG) |
+| ------------------------------------------------------ | :----------------------------------------------------- |
+| ![Case_JLC_3D_PA12(3)](Images/Case_JLC_3D_PA12(3).JPG) | ![Case_JLC_3D_PA12(4)](Images/Case_JLC_3D_PA12(4).JPG) |
+
+### 裸板
 
 | ![SAU-G0_2号机1](Images/SAU-G0_2号机1.JPG) | ![IMG_2503](Images/SAU-G0_2号机2.JPG) | ![IMG_2529](Images/SAU-G0_2号机3.PNG) |
 | ------------------------------------------ | ------------------------------------- | ------------------------------------- |
