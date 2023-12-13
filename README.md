@@ -160,7 +160,7 @@ STM32G031G8U6出厂时option bytes默认BOOT0信号由option byte决定，需要
 
 ![](Images/一键下载电路电平测试-低功耗版_FlyMcu和STM32CubeProgrammer配合以ISP连接G031.png)
 
-## 8. 成品展示
+## 8. 成品
 
 ### 外壳
 
