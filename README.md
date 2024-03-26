@@ -150,7 +150,7 @@ Type-C 正插连接即可烧录
 
 板载一键下载电路，Type-C 反插连接
 
-STM32G031G8U6出厂时option bytes默认BOOT0信号由option byte决定，需要先使用STLINK更改option bytes的
+STM32G031G8U6出厂时option bytes默认BOOT0信号由option byte决定，**ISP烧录前，必须先使用STLINK以SWD连G031修改option bytes的nBOOT_SEL位为取消勾选，否则后续CH343P的RTS和DTR无法将G031设置为IPS模式！！！**
 
 需要FlyMCU和开STM32CubeProgrammer 配合烧录
 
