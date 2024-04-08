@@ -1,0 +1,238 @@
+Export log for : Pcad-ASCII.Rep
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+      Warning: Unknown Kind 11
+AddingPadStyle (Default)
+AddingPadStyle P:EX74Y74D401
+AddingPadStyle EF35X35TOP1
+AddingPadStyle EF26X47TOP1
+AddingPadStyle EF35X31TOP1
+AddingPadStyle EF22X39TOP1
+AddingPadStyle EF42X55TOP1
+AddingPadStyle EF32X38TOP1
+AddingPadStyle EF45X55TOP1
+AddingPadStyle EF59X12TOP1
+AddingPadStyle P:EX63Y39D241
+AddingPadStyle P:EX83Y39D241
+AddingPadStyle P:EX26Y26D261
+AddingPadStyle EF18X35TOP1
+AddingPadStyle EF8X21TOP1
+AddingPadStyle EF16X21TOP1
+AddingPadStyle EF24X57TOP1
+AddingPadStyle P:EX44Y44D241
+AddingPadStyle P:EX228Y228D1221
+AddingPadStyle EF25X50TOP1
+AddingPadStyle EF28X28TOP1
+AddingPadStyle EF39X71TOP1
+AddingPadStyle EF132X132TOP1
+AddingPadStyle EF36X16TOP1
+AddingPadStyle EF10X28TOP1
+AddingPadStyle EF57X57TOP1
+AddingPadStyle EF12X26TOP1
+AddingPadStyle EF31X106TOP1
+AddingPadStyle EF24X43TOP1
+AddingPadStyle EF28X11TOP1
+AddingPadStyle EF31X20TOP1
+AddingPadStyle EF24X59TOP1
+AddingPadStyle EF100X13TOP1
+AddingPadStyle EF43X94TOP1
+AddingPadStyle EF12X22TOP1
+AddingPadStyle EF12X32TOP1
+AddingPadStyle EF9X31TOP1
+AddingPadStyle EF65X94TOP1
+AddingPadStyle EF31X31TOP1
+AddingPadStyle EF50X80TOP1
+Adding ViaStyle (Default)
+Adding ViaStyle V:EX24Y24D121
+Adding ViaStyle V:EX20Y20D121
+Adding TextStyle (Default)
+Adding TextStyle T:H38W10
+Adding TextStyle T:H38W5
+Adding TextStyle T:H60W10
+Adding TextStyle T:H150W10
+Adding TextStyle T:H80W10
+Adding TextStyle T:H100W10
+Adding TextStyle T:H90W10
+Adding TextStyle T:H38W3
+Adding PatternDef 2.54mm_Male_x2_1
+Adding PatternDef 2.54mm_Male_x2_2
+Adding PatternDef 2.54mm_Male_x4_1
+Adding PatternDef 2.54mm_Male_x2_3
+Adding PatternDef R0603_1
+Adding PatternDef 2.54mm_Male_x1_1
+Adding PatternDef 2.54mm_Male_x2_4
+Adding PatternDef SWITCH_3X4X2.5_4PIN_SMD_1
+Adding PatternDef 2.54mm_Male_x2_5
+Adding PatternDef 2.54mm_Male_x3_1
+Adding PatternDef SOD-323_1
+Adding PatternDef 2.54mm_Male_x1_2
+Adding PatternDef 2.54mm_Male_x1_3
+Adding PatternDef 2.54mm_Male_x3_2
+Adding PatternDef TI SOT-23-5 DBV_1
+Adding PatternDef R0805_1
+Adding PatternDef C0603_1
+Adding PatternDef 2.54mm_Male_x4_2
+Adding PatternDef FER0603_1
+Adding PatternDef 2.54mm_Male_x2_6
+Adding PatternDef 2.54mm_Male_x3_3
+Adding PatternDef 2.54mm_Male_x3_4
+Adding PatternDef SOD-323_2
+Adding PatternDef INFINEON SOT-23-3_1
+Adding PatternDef EPSON TSX-3225_1
+Adding PatternDef Type-C-TOP_1
+Adding PatternDef RESNET 1206-8 CONCAVE_1
+Adding PatternDef SOD-323_3
+Adding PatternDef SOD-323_4
+Adding PatternDef DFN2510-10_SOT1165-1_1
+Adding PatternDef ANALOG DEV SOIC-8 R8_1
+Adding PatternDef SUN_HOLE_M3_1
+Adding PatternDef SJ_2P_1
+Adding PatternDef SJ_3P_1
+Adding PatternDef 2.54mm_Male_x4_3
+Adding PatternDef 2.54mm_Male_x2_7
+Adding PatternDef WS2812_2020_1
+Adding PatternDef WS2812_2020_2
+Adding PatternDef TI SOP-16 D_1
+Adding PatternDef 2.54mm_Male_x3_5
+Adding PatternDef 2.54mm_Male_x3_6
+Adding PatternDef XTAL_2P_3215_1
+Adding PatternDef VQFN-20 5x5MM 0.65_1
+Adding PatternDef 2.54mm_Male_x3_7
+Adding PatternDef 2.54mm_Male_x3_8
+Adding PatternDef Analog QFN-16 3x3MM_1
+Adding PatternDef ON SEMI SOT-363_1
+Adding PatternDef 2.54mm_Male_x3_9
+Adding PatternDef 2.54mm_Male_x2_8
+Adding PatternDef 2.54mm_Male_x2_9
+Adding PatternDef 2.54mm_Male_x2_10
+Adding PatternDef IND-30301X_1
+Adding PatternDef MICROCHIP SOT-23-5 OT_1
+Adding PatternDef LGA-16-3X3_1
+Adding PatternDef AHT20_1
+Adding PatternDef NXP_SO20_1
+Adding PatternDef 2.54mm_Male_x4_4
+Adding PatternDef oled_64x48_0.66_SSD1306_TOP_straight_no_3d_1
+Adding PatternDef MS621FE-FL11E_1
+Adding PatternDef UFQFPN28-4x4mm_ODG_1
+Adding PatternDef TI PVSON-10 3x3MM DRC_1
+Adding PatternDef ODG_LOGO_soldermask_1
+Adding PatternDef LED0603_WHITE_1
+Adding PatternDef FER0805_1
+Adding PatternDef SOD-323_5
+Adding PatternDef C1206_1
+Adding CompDef 2.54mm_Male_x2_1
+Adding CompDef 2.54mm_Male_x2_2
+Adding CompDef 2.54mm_Male_x4_1
+Adding CompDef 2.54mm_Male_x2_3
+Adding CompDef R0603_1
+Adding CompDef 2.54mm_Male_x1_1
+Adding CompDef 2.54mm_Male_x2_4
+Adding CompDef SWITCH_3X4X2.5_4PIN_SMD_1
+Adding CompDef 2.54mm_Male_x2_5
+Adding CompDef 2.54mm_Male_x3_1
+Adding CompDef SOD-323_1
+Adding CompDef 2.54mm_Male_x1_2
+Adding CompDef 2.54mm_Male_x1_3
+Adding CompDef 2.54mm_Male_x3_2
+Adding CompDef TI SOT-23-5 DBV_1
+Adding CompDef R0805_1
+Adding CompDef C0603_1
+Adding CompDef 2.54mm_Male_x4_2
+Adding CompDef FER0603_1
+Adding CompDef 2.54mm_Male_x2_6
+Adding CompDef 2.54mm_Male_x3_3
+Adding CompDef 2.54mm_Male_x3_4
+Adding CompDef SOD-323_2
+Adding CompDef INFINEON SOT-23-3_1
+Adding CompDef EPSON TSX-3225_1
+Adding CompDef Type-C-TOP_1
+Adding CompDef RESNET 1206-8 CONCAVE_1
+Adding CompDef SOD-323_3
+Adding CompDef SOD-323_4
+Adding CompDef DFN2510-10_SOT1165-1_1
+Adding CompDef ANALOG DEV SOIC-8 R8_1
+Adding CompDef SUN_HOLE_M3_1
+Adding CompDef SJ_2P_1
+Adding CompDef SJ_3P_1
+Adding CompDef 2.54mm_Male_x4_3
+Adding CompDef 2.54mm_Male_x2_7
+Adding CompDef WS2812_2020_1
+Adding CompDef WS2812_2020_2
+Adding CompDef TI SOP-16 D_1
+Adding CompDef 2.54mm_Male_x3_5
+Adding CompDef 2.54mm_Male_x3_6
+Adding CompDef XTAL_2P_3215_1
+Adding CompDef VQFN-20 5x5MM 0.65_1
+Adding CompDef 2.54mm_Male_x3_7
+Adding CompDef 2.54mm_Male_x3_8
+Adding CompDef Analog QFN-16 3x3MM_1
+Adding CompDef ON SEMI SOT-363_1
+Adding CompDef 2.54mm_Male_x3_9
+Adding CompDef 2.54mm_Male_x2_8
+Adding CompDef 2.54mm_Male_x2_9
+Adding CompDef 2.54mm_Male_x2_10
+Adding CompDef IND-30301X_1
+Adding CompDef MICROCHIP SOT-23-5 OT_1
+Adding CompDef LGA-16-3X3_1
+Adding CompDef AHT20_1
+Adding CompDef NXP_SO20_1
+Adding CompDef 2.54mm_Male_x4_4
+Adding CompDef oled_64x48_0.66_SSD1306_TOP_straight_no_3d_1
+Adding CompDef MS621FE-FL11E_1
+Adding CompDef UFQFPN28-4x4mm_ODG_1
+Adding CompDef TI PVSON-10 3x3MM DRC_1
+Adding CompDef ODG_LOGO_soldermask_1
+Adding CompDef LED0603_WHITE_1
+Adding CompDef FER0805_1
+Adding CompDef SOD-323_5
+Adding CompDef C1206_1
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Polygon has been imported as unpoured.  It will need to be repoured in PCAD
+      Warning: Unexpected Free Text Object Found On Layer BottomOverlay.   This may cause problems in PCAD PCB
+ 
+EndLog

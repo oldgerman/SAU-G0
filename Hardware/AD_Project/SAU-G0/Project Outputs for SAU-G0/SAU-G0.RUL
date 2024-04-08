@@ -1,0 +1,9 @@
+DRC Rules Export File for PCB: D:\SAU-G0\Hardware\AD_Project\SAU-G0\SAU-G0.PcbDoc
+RuleKind=Clearance|RuleName=Clearance_G2_Pad|Scope=Board|Minimum=10.00
+RuleKind=Clearance|RuleName=Clearance_G1_Pad|Scope=Board|Minimum=10.00
+RuleKind=Clearance|RuleName=Clearance_G2_Via|Scope=Board|Minimum=12.00
+RuleKind=Clearance|RuleName=Clearance_G1_Via|Scope=Board|Minimum=12.00
+RuleKind=SolderMaskExpansion|RuleName=SolderMaskExpansion|Scope=Board|Minimum=2.00
+RuleKind=Width|RuleName=Width|Scope=Board|Minimum=4.00
+RuleKind=Clearance|RuleName=Clearance|Scope=Board|Minimum=5.00
+RuleKind=ShortCircuit|RuleName=ShortCircuit|Scope=Board|Allowed=0
