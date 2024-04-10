@@ -312,7 +312,7 @@ void columsDataCollected_Schedule(){
 	drawNumber((OLED_WIDTH - numXOffset) - places * 6, y + 16,
 			systemSto.data.NumDataCollected.uint_16, places);
 	drawNumber((OLED_WIDTH - numXOffset) - places * 6, y + 32,
-			systemSto.data.NumDataWillCollect, places);
+			systemSto.data.NumDataWillCollect - systemSto.data.NumDataCollected.uint_16, places);
 
 	u8g2.sendBuffer();
 	waitingSelect(SEL_3);
