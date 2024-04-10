@@ -16,8 +16,8 @@
 #define RTC_IC_PCF8563 1
 
 /*设置你想用的RTC芯片*/
-#define RTC_IC RTC_IC_PCF212x
-//#define RTC_IC RTC_IC_PCF8563
+//#define RTC_IC RTC_IC_PCF212x
+#define RTC_IC RTC_IC_PCF8563
 //RTC的闹钟最小粒度
 #if (RTC_IC == RTC_IC_PCF212x)		//PCF212x可支持秒级闹钟
 #define RTC_IC_ALARM_SUPPORT_S 1
