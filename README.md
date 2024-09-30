@@ -228,9 +228,24 @@ VbatWeek是从主板的锂电池经BAV99两个硅二极管降压取电的，压�
 
 使用XCOM，连接串口黑屏就勾选RTS，再长按中键连接
 
-在菜单的数据采集里，选择导出数据，将输出数据保存为csv文件，导入谷歌表格，格式化处理，得到折线图
+菜单-->数据采集-->导出数据，文本表格格式为 csv 格式，数据以逗号分割，在XCOM里导出选中，复制，新建一个 .csv文件，粘贴进去，就可以用 Excel 或者 Google Sheets （谷歌表格） 处理
 
-采集数据的Excel文件位于[Data](https://github.com/oldgerman/SAU-G0/tree/master/Data)文件夹
+> 格式如下：
+>
+> ```c
+> Date & Time        , T(C) , H(%)
+> 2024/09/30 17:22:00, 31.90 ,51.00
+> 2024/09/30 17:22:10, 31.90 ,49.00
+> 2024/09/30 17:22:20, 31.80 ,40.00
+> 2024/09/30 17:22:30, 31.70 ,44.00
+> 2024/09/30 17:22:40, 31.70 ,44.00
+> ```
+
+例如，使用[谷歌表格](https://docs.google.com/spreadsheets/create?hl=zh-cn)，上传 csv 文件后，对列进行少许的格式化，得到折线图
+
+![20240930_SAU-G0-PL_csv文本表格5次采集（纯Google_Sheet）](Data/20240930_SAU-G0-PL_csv文本表格5次采集（纯Google_Sheet）.png)
+
+采集数据的示例Excel文件位于[Data](https://github.com/oldgerman/SAU-G0/tree/master/Data)文件夹
 
 [谷歌表格绘制折线图技巧](https://github.com/oldgerman/SAU-G0/tree/master/Data/谷歌表格绘制折线图技巧.md)
 
