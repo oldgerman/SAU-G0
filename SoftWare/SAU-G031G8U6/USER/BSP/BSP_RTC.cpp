@@ -74,6 +74,9 @@ void RTC_Init()
 #endif
 }
 
+/**
+ * @brief 串口设置时间：格式 24/09/30 17:08:00 发送新行
+ */
 void RTC_Update() {
 	if(USART_DateTimeUpdated())
 	{

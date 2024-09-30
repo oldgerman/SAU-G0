@@ -206,7 +206,7 @@ struct history {
 	 * <STOP1> 60d<--这里显示下面那行写不下的天数
 	 * 08h 07m 06s
 	 */
-
+#ifdef TABLE_MARKDWON
 void columsDataCollect_Export(){
 	if(systemSto.data.NumDataCollected.uint_16 != 0)
 	{
@@ -277,7 +277,82 @@ void columsDataCollect_Export(){
 	}else
 		colums_StrSelect(true, SEL_3, "没有数据！", 1);
 }
+#else
+/**
+ * @brief CSV表格导出数据
+ */
+void columsDataCollect_Export(){
+	if(systemSto.data.NumDataCollected.uint_16 != 0)
+	{
+		if(colums_StrSelect(true, SEL_2, "通过串口", 1, "导出数据？")) {
+			uint32_t timeCounter = HAL_GetTick();
+			u8g2.clearBuffer();
+//			u8g2.sendBuffer();
+			u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese); //12x12 pixels
+			uint8_t y = 13;
+			uint8_t x = 1;
+			u8g2.drawUTF8(x, y, "已导");
+			u8g2.drawUTF8(x, y + 16, "待导");
+			u8g2.drawUTF8(x, y + 32, "正在导出");
+			u8g2.setFont(u8g2_font_unifont_tr);	//10x7 pixels
 
+			uint8_t numXOffset = 10;
+			uint8_t places = 4;			//数据最大位数
+			usb_printf("Date & Time        , T(C) , H(%%)\r\n");	//格式化打印%需要输入两个%
+
+			DateTime dt(getEEPROMData_DateTime(&systemSto.data.dtStartCollect));
+
+			ee24.exchangeI2CPins();
+			for(uint16_t i = 0; i <= systemSto.data.NumDataCollected.uint_16; i++) {
+				if(i <  systemSto.data.NumDataCollected.uint_16) {
+					uint8_t data[4] = {0};
+					ee24.readBytes(sizeof(systemStorageType) + i * sizeof(data), data, sizeof(data));
+//	每行格式：			| 2022/5/10 8:00  | 18.72 | 65.83 |\r\n
+					TimeSpan timeSpan(
+							(Sec24H / systemSto.data.NumDataOneDay) * 	//得到任务周期，单位：秒
+							i);											//得到每次步进
+					DateTime now = dt + timeSpan;	//虽然有operator+，但不能写dt = dt + timeSpan;
+					//导出为EXCEL真日期，不需要加前导0
+					usb_printf("%04d/%02d/%02d %02d:%02d:%02d, %02d.%02d ,%02d.%02d\r\n",
+							now.year(),
+							now.month(),
+							now.day(),
+
+							now.hour(),
+							now.minute(),
+							now.second(),
+
+							data[0],data[1],
+							data[2],data[3]
+					);
+				}
+				//每10次才更新一下显示计数
+				if((i % 10 == 0) || i == systemSto.data.NumDataCollected.uint_16) {
+					u8g2.setDrawColor(0);
+					u8g2.drawBox(2+24, 0, 64, 32);
+					u8g2.setDrawColor(1);
+					drawNumber((OLED_WIDTH - numXOffset) - places * 6, y,
+							i, places);
+					drawNumber((OLED_WIDTH - numXOffset) - places * 6, y + 16,
+							systemSto.data.NumDataCollected.uint_16 - i, places);
+					u8g2.sendBuffer();
+				}
+			}
+			ee24.recoverI2CPins();
+			timeCounter = HAL_GetTick()- timeCounter;
+			u8g2.setFont(u8g2_simsun_9_fontUniSensorChinese); //12x12 pixels
+			u8g2.drawUTF8(x, y + 32, "导出完成！");
+			u8g2.sendBuffer();
+			waitingSelect(SEL_3);
+			//待实现打印用时时间
+			char buf[10] = {0};
+			sprintf(buf, "%ldms", timeCounter);
+			colums_StrSelect(true, SEL_3, "导出用时：", 1, buf, false);	//中文不能打unifont数字怎么办？
+		}
+	}else
+		colums_StrSelect(true, SEL_3, "没有数据！", 1);
+}
+#endif
 void columsDateTime_ChangeDateTime(){
 	DateTime dt = getEEPROMData_DateTime(&dtSys);
 	const Colum *ptrColum = Page::ptrPage->getColumsSelected();
